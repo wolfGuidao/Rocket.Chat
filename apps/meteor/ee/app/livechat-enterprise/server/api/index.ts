@@ -2,7 +2,7 @@ import './agents';
 import './departments';
 import './inquiries';
 import './monitors';
-import './priorities';
+import './sla';
 import './tags';
 import './units';
 import './business-hours';

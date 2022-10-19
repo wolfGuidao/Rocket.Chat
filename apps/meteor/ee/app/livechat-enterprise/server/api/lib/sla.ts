@@ -3,7 +3,7 @@ import { OmnichannelServiceLevelAgreements } from '@rocket.chat/models';
 import type { IOmnichannelServiceLevelAgreements } from '@rocket.chat/core-typings';
 import type { FindOptions } from 'mongodb';
 
-type FindPrioritiesParams = {
+type FindSLAParams = {
 	text?: string;
 	pagination: {
 		offset: number;
@@ -12,20 +12,20 @@ type FindPrioritiesParams = {
 	};
 };
 
-type FindPrioritiesResult = {
-	priorities: IOmnichannelServiceLevelAgreements[];
+type FindSLAResult = {
+	sla: IOmnichannelServiceLevelAgreements[];
 	count: number;
 	offset: number;
 	total: number;
 };
 
-type FindPrioritiesByIdParams = {
-	priorityId: string;
+type FindSLAByIdParams = {
+	slaId: string;
 };
 
-type FindPrioritiesByIdResult = IOmnichannelServiceLevelAgreements | null;
+type FindSLAByIdResult = IOmnichannelServiceLevelAgreements | null;
 
-export async function findPriorities({ text, pagination: { offset, count, sort } }: FindPrioritiesParams): Promise<FindPrioritiesResult> {
+export async function findSLA({ text, pagination: { offset, count, sort } }: FindSLAParams): Promise<FindSLAResult> {
 	const query = {
 		...(text && { $or: [{ name: new RegExp(escapeRegExp(text), 'i') }, { description: new RegExp(escapeRegExp(text), 'i') }] }),
 	};
@@ -36,16 +36,16 @@ export async function findPriorities({ text, pagination: { offset, count, sort }
 		limit: count,
 	});
 
-	const [priorities, total] = await Promise.all([cursor.toArray(), totalCount]);
+	const [sla, total] = await Promise.all([cursor.toArray(), totalCount]);
 
 	return {
-		priorities,
-		count: priorities.length,
+		sla,
+		count: sla.length,
 		offset,
 		total,
 	};
 }
 
-export async function findPriorityById({ priorityId }: FindPrioritiesByIdParams): Promise<FindPrioritiesByIdResult> {
-	return OmnichannelServiceLevelAgreements.findOneById(priorityId);
+export async function findSLAById({ slaId }: FindSLAByIdParams): Promise<FindSLAByIdResult> {
+	return OmnichannelServiceLevelAgreements.findOneById(slaId);
 }

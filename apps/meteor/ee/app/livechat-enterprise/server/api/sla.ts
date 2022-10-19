@@ -1,8 +1,8 @@
 import { API } from '../../../../../app/api/server';
-import { findPriorities, findPriorityById } from './lib/priorities';
+import { findSLA, findSLAById } from './lib/sla';
 
 API.v1.addRoute(
-	'livechat/priorities',
+	'livechat/sla',
 	{ authRequired: true, permissionsRequired: { GET: { permissions: ['manage-livechat-priorities', 'view-l-room'], operation: 'hasAny' } } },
 	{
 		async get() {
@@ -11,7 +11,7 @@ API.v1.addRoute(
 			const { text } = this.queryParams;
 
 			return API.v1.success(
-				await findPriorities({
+				await findSLA({
 					text,
 					pagination: {
 						offset,
@@ -25,21 +25,21 @@ API.v1.addRoute(
 );
 
 API.v1.addRoute(
-	'livechat/priorities/:priorityId',
+	'livechat/sla/:slaId',
 	{ authRequired: true, permissionsRequired: { GET: { permissions: ['manage-livechat-priorities', 'view-l-room'], operation: 'hasAny' } } },
 	{
 		async get() {
-			const { priorityId } = this.urlParams;
+			const { slaId } = this.urlParams;
 
-			const priority = await findPriorityById({
-				priorityId,
+			const sla = await findSLAById({
+				slaId,
 			});
 
-			if (!priority) {
-				return API.v1.notFound(`Priority with id ${priorityId} not found`);
+			if (!sla) {
+				return API.v1.notFound(`SLA with id ${slaId} not found`);
 			}
 
-			return API.v1.success(priority);
+			return API.v1.success(sla);
 		},
 	},
 );

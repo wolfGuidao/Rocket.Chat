@@ -2805,11 +2805,11 @@ export type OmnichannelEndpoints = {
 		PUT: (params: PUTWebRTCCallId) => { status: string | undefined };
 	};
 
-	'/v1/livechat/priorities': {
-		GET: (params: LivechatPrioritiesProps) => PaginatedResult<{ priorities: IOmnichannelServiceLevelAgreements[] }>;
+	'/v1/livechat/sla': {
+		GET: (params: LivechatPrioritiesProps) => PaginatedResult<{ sla: IOmnichannelServiceLevelAgreements[] }>;
 	};
 
-	'/v1/livechat/priorities/:priorityId': {
+	'/v1/livechat/sla/:slaId': {
 		GET: () => IOmnichannelServiceLevelAgreements;
 	};
 
