@@ -134,38 +134,38 @@ export const LivechatEnterprise = {
 	},
 
 	// make async
-	saveSLA(_id, priorityData) {
+	saveSLA(_id, slaData) {
 		check(_id, Match.Maybe(String));
 
-		check(priorityData, {
+		check(slaData, {
 			name: String,
 			description: Match.Optional(String),
 			dueTimeInMinutes: String,
 		});
 
 		const oldSLA = _id && Promise.await(OmnichannelServiceLevelAgreements.findOneById(_id, { projection: { dueTimeInMinutes: 1 } }));
-		const priority = Promise.await(OmnichannelServiceLevelAgreements.createOrUpdateSLA(priorityData, _id));
+		const sla = Promise.await(OmnichannelServiceLevelAgreements.createOrUpdatePriority(slaData, _id));
 		if (!oldSLA) {
-			return priority;
+			return sla;
 		}
 
 		const { dueTimeInMinutes: oldDueTimeInMinutes } = oldSLA;
-		const { dueTimeInMinutes } = priority;
+		const { dueTimeInMinutes } = sla;
 
 		if (oldDueTimeInMinutes !== dueTimeInMinutes) {
-			updateSLAInquiries(priority);
+			updateSLAInquiries(sla);
 		}
 
-		return priority;
+		return sla;
 	},
 
 	removeSLA(_id) {
 		check(_id, String);
 
-		const priority = Promise.await(OmnichannelServiceLevelAgreements.findOneById(_id, { projection: { _id: 1 } }));
+		const sla = Promise.await(OmnichannelServiceLevelAgreements.findOneById(_id, { projection: { _id: 1 } }));
 
-		if (!priority) {
-			throw new Meteor.Error('error-invalid-priority', 'Invalid priority', {
+		if (!sla) {
+			throw new Meteor.Error('error-invalid-priority', 'Invalid sla', {
 				method: 'livechat:removeSLA',
 			});
 		}
@@ -176,9 +176,9 @@ export const LivechatEnterprise = {
 		return removed;
 	},
 
-	updateRoomSLA(roomId, user, priority) {
-		updateInquiryQueueSla(roomId, priority);
-		updateRoomSLAHistory(roomId, user, priority);
+	updateRoomSLA(roomId, user, sla) {
+		updateInquiryQueueSla(roomId, sla);
+		updateRoomSLAHistory(roomId, user, sla);
 	},
 
 	placeRoomOnHold(room, comment, onHoldBy) {

@@ -329,6 +329,7 @@ type LiveChatRoomSaveInfo = {
 		tags?: string[];
 		livechatData?: { [k: string]: string };
 		priorityId?: string;
+		slaId?: string;
 	};
 };
 
@@ -388,6 +389,10 @@ const LiveChatRoomSaveInfoSchema = {
 					nullable: true,
 				},
 				priorityId: {
+					type: 'string',
+					nullable: true,
+				},
+				slaId: {
 					type: 'string',
 					nullable: true,
 				},

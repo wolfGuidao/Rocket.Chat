@@ -124,7 +124,7 @@ function RoomEdit({ room, visitor, reload, reloadInfo, close }) {
 		return <FormSkeleton />;
 	}
 
-	const { priorities } = prioritiesResult;
+	const { sla } = prioritiesResult;
 
 	return (
 		<>
@@ -146,8 +146,8 @@ function RoomEdit({ room, visitor, reload, reloadInfo, close }) {
 				<Field>
 					<Tags tags={tags} handler={handleTags} />
 				</Field>
-				{PrioritiesSelect && priorities && priorities.length > 0 && (
-					<PrioritiesSelect value={slaId} label={t('Priority')} options={priorities} handler={handleSlaId} />
+				{PrioritiesSelect && sla && sla.length > 0 && (
+					<PrioritiesSelect value={slaId} label={t('Priority')} options={sla} handler={handleSlaId} />
 				)}
 			</VerticalBar.ScrollableContent>
 			<VerticalBar.Footer>

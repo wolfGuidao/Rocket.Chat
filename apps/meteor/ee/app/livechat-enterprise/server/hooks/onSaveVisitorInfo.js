@@ -17,7 +17,7 @@ callbacks.add(
 		}
 
 		const priority = newslaId && Promise.await(OmnichannelServiceLevelAgreements.findOneById(newslaId));
-		LivechatEnterprise.updateRoomPriority(room._id, user, priority);
+		LivechatEnterprise.updateRoomSLA(room._id, user, priority);
 
 		return room;
 	},

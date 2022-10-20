@@ -62,6 +62,7 @@ function PrioritiesRoute() {
 	);
 
 	const { value: data = {}, reload } = useEndpointData('/v1/livechat/sla', query);
+	console.error('ASDASDASDASDASD ', data);
 
 	const header = useMemo(
 		() =>

@@ -199,11 +199,11 @@ export const updateQueueInactivityTimeout = () => {
 	});
 };
 
-export const updateRoomSLAHistory = (rid, user, priority) => {
+export const updateRoomSLAHistory = (rid, user, sla) => {
 	const history = {
-		priorityData: {
+		slaData: {
 			definedBy: user,
-			priority: priority || {},
+			sla: sla || {},
 		},
 	};
 
