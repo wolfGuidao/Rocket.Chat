@@ -4,7 +4,7 @@ import type { IOmnichannelServiceLevelAgreements } from '@rocket.chat/core-typin
 import { expect } from 'chai';
 
 import { getCredentials, api, request, credentials } from '../../../data/api-data';
-import { savePriority } from '../../../data/livechat/priorities';
+import { saveSLA } from '../../../data/livechat/priorities';
 import { createVisitor, createLivechatRoom, takeInquiry, createAgent } from '../../../data/livechat/rooms';
 import { updatePermission, updateSetting } from '../../../data/permissions.helper';
 import { IS_EE } from '../../../e2e/config/constants';
@@ -30,7 +30,7 @@ import { IS_EE } from '../../../e2e/config/constants';
 		it('should return an array of priorities', async () => {
 			await updatePermission('manage-livechat-priorities', ['admin']);
 			await updatePermission('view-l-room', ['livechat-agent']);
-			const priority = await savePriority();
+			const priority = await saveSLA();
 			const response = await request.get(api('livechat/sla')).set(credentials).expect('Content-Type', 'application/json').expect(200);
 			expect(response.body).to.have.property('success', true);
 			expect(response.body.sla).to.be.an('array').with.lengthOf.greaterThan(0);
@@ -52,7 +52,7 @@ import { IS_EE } from '../../../e2e/config/constants';
 		it('should return a priority', async () => {
 			await updatePermission('manage-livechat-priorities', ['admin']);
 			await updatePermission('view-l-room', ['livechat-agent']);
-			const priority = await savePriority();
+			const priority = await saveSLA();
 			const response = await request
 				.get(api(`livechat/sla/${priority._id}`))
 				.set(credentials)
@@ -150,7 +150,7 @@ import { IS_EE } from '../../../e2e/config/constants';
 		it('should prioritize an inquiry', async () => {
 			const visitor = await createVisitor();
 			const room = await createLivechatRoom(visitor.token);
-			const priority = await savePriority();
+			const priority = await saveSLA();
 			const response = await request
 				.put(api('livechat/inquiry.prioritize'))
 				.set(credentials)

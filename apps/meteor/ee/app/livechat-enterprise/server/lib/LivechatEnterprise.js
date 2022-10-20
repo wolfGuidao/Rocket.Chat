@@ -7,13 +7,7 @@ import LivechatTag from '../../../models/server/models/LivechatTag';
 import { LivechatRooms, Messages } from '../../../../../app/models/server';
 import { addUserRoles } from '../../../../../server/lib/roles/addUserRoles';
 import { removeUserFromRoles } from '../../../../../server/lib/roles/removeUserFromRoles';
-import {
-	processWaitingQueue,
-	removePriorityFromRooms,
-	updateInquiryQueueSla,
-	updatePriorityInquiries,
-	updateRoomPriorityHistory,
-} from './Helper';
+import { processWaitingQueue, removeSLAFromRooms, updateInquiryQueueSla, updateSLAInquiries, updateRoomSLAHistory } from './Helper';
 import { RoutingManager } from '../../../../../app/livechat/server/lib/RoutingManager';
 import { settings } from '../../../../../app/settings/server';
 import { logger, queueLogger } from './logger';
@@ -140,7 +134,7 @@ export const LivechatEnterprise = {
 	},
 
 	// make async
-	savePriority(_id, priorityData) {
+	saveSLA(_id, priorityData) {
 		check(_id, Match.Maybe(String));
 
 		check(priorityData, {
@@ -149,42 +143,42 @@ export const LivechatEnterprise = {
 			dueTimeInMinutes: String,
 		});
 
-		const oldPriority = _id && Promise.await(OmnichannelServiceLevelAgreements.findOneById(_id, { projection: { dueTimeInMinutes: 1 } }));
-		const priority = Promise.await(OmnichannelServiceLevelAgreements.createOrUpdatePriority(priorityData, _id));
-		if (!oldPriority) {
+		const oldSLA = _id && Promise.await(OmnichannelServiceLevelAgreements.findOneById(_id, { projection: { dueTimeInMinutes: 1 } }));
+		const priority = Promise.await(OmnichannelServiceLevelAgreements.createOrUpdateSLA(priorityData, _id));
+		if (!oldSLA) {
 			return priority;
 		}
 
-		const { dueTimeInMinutes: oldDueTimeInMinutes } = oldPriority;
+		const { dueTimeInMinutes: oldDueTimeInMinutes } = oldSLA;
 		const { dueTimeInMinutes } = priority;
 
 		if (oldDueTimeInMinutes !== dueTimeInMinutes) {
-			updatePriorityInquiries(priority);
+			updateSLAInquiries(priority);
 		}
 
 		return priority;
 	},
 
-	removePriority(_id) {
+	removeSLA(_id) {
 		check(_id, String);
 
 		const priority = Promise.await(OmnichannelServiceLevelAgreements.findOneById(_id, { projection: { _id: 1 } }));
 
 		if (!priority) {
 			throw new Meteor.Error('error-invalid-priority', 'Invalid priority', {
-				method: 'livechat:removePriority',
+				method: 'livechat:removeSLA',
 			});
 		}
 		const removed = Promise.await(OmnichannelServiceLevelAgreements.removeById(_id));
 		if (removed) {
-			removePriorityFromRooms(_id);
+			removeSLAFromRooms(_id);
 		}
 		return removed;
 	},
 
-	updateRoomPriority(roomId, user, priority) {
+	updateRoomSLA(roomId, user, priority) {
 		updateInquiryQueueSla(roomId, priority);
-		updateRoomPriorityHistory(roomId, user, priority);
+		updateRoomSLAHistory(roomId, user, priority);
 	},
 
 	placeRoomOnHold(room, comment, onHoldBy) {
