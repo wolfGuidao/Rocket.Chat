@@ -13,7 +13,7 @@ const UrlPreview = (props: UrlPreviewType): ReactElement => {
 
 	return (
 		<>
-			<Box display='flex' flexDirection='row' color='hint' fontScale='c1' alignItems='center'>
+			<Box display='flex' flexDirection='row' color='hint' fontScale='c1'>
 				{t('Link_Preview')} {collapse}
 			</Box>
 			{!collapsed && <UrlPreviewResolver {...props} />}

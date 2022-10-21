@@ -41,7 +41,6 @@ export class LivechatAgentActivityRaw extends BaseRaw<ILivechatAgentActivity> im
 					agentId,
 				},
 			},
-			{ upsert: true },
 		);
 	}
 

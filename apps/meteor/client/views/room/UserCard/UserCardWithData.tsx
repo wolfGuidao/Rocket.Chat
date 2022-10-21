@@ -31,10 +31,9 @@ const UserCardWithData = ({ username, onClose, target, open, rid }: UserCardWith
 
 	ref.current = target;
 
-	const isLoading = state === AsyncStatePhase.LOADING;
-
 	const user = useMemo(() => {
-		const defaultValue = isLoading ? undefined : null;
+		const loading = state === AsyncStatePhase.LOADING;
+		const defaultValue = loading ? undefined : null;
 
 		const {
 			_id,
@@ -59,7 +58,7 @@ const UserCardWithData = ({ username, onClose, target, open, rid }: UserCardWith
 			customStatus: statusText,
 			nickname,
 		};
-	}, [data, username, showRealNames, isLoading, getRoles]);
+	}, [data, username, showRealNames, state, getRoles]);
 
 	const handleOpen = useMutableCallback((e) => {
 		open?.(e);
@@ -98,7 +97,7 @@ const UserCardWithData = ({ username, onClose, target, open, rid }: UserCardWith
 		<>
 			<Backdrop bg='transparent' onClick={onClose} />
 			<PositionAnimated anchor={ref} placement='top-start' margin={8} visible={AnimatedVisibility.UNHIDING}>
-				<UserCard {...user} onClose={onClose} open={handleOpen} actions={actions} isLoading={isLoading} />
+				<UserCard {...user} onClose={onClose} open={handleOpen} actions={actions} />
 			</PositionAnimated>
 		</>
 	);

@@ -78,7 +78,7 @@ function RoomFiles({
 				)}
 
 				{!loading && filesItems.length <= 0 && (
-					<Box textAlign='center' p='x12' color='annotation'>
+					<Box textAlign='center' p='x12' color='neutral-600'>
 						{t('No_files_found')}
 					</Box>
 				)}

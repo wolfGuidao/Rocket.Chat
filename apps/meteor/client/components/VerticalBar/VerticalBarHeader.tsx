@@ -10,7 +10,7 @@ const VerticalBarHeader: FC<{ children: ReactNode; props?: ComponentProps<typeof
 		is='h3'
 		pi='x24'
 		borderBlockEndWidth='x2'
-		borderBlockColor='extra-light'
+		borderBlockColor='neutral-200'
 		{...props}
 	>
 		<Box
@@ -21,7 +21,7 @@ const VerticalBarHeader: FC<{ children: ReactNode; props?: ComponentProps<typeof
 			fontScale='h4'
 			flexGrow={1}
 			overflow='hidden'
-			color='default'
+			color='neutral-800'
 		>
 			<Margins inline='x4'>{children}</Margins>
 		</Box>

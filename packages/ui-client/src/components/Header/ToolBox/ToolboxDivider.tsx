@@ -1,6 +1,8 @@
-import { Divider } from '@rocket.chat/fuselage';
-import type { ReactElement } from 'react';
+import { Box } from '@rocket.chat/fuselage';
+import type { FC } from 'react';
 
-const ToolboxDivider = (): ReactElement => <Divider mi='x4' vertical />;
+const ToolboxDivider: FC<any> = () => (
+	<Box is='hr' w='2px' display='block' backgroundColor='neutral-400' justifySelf='stretch' alignSelf='stretch' mi='x4' />
+);
 
 export default ToolboxDivider;

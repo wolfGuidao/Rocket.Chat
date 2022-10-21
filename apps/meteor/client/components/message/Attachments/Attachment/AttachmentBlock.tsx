@@ -5,7 +5,7 @@ import Attachment from './Attachment';
 
 const AttachmentBlock: FC<{ pre?: JSX.Element | string | undefined; color?: string | undefined }> = ({
 	pre,
-	color = 'annotation',
+	color = 'neutral-600',
 	children,
 }) => (
 	<Attachment>

@@ -1,5 +1,6 @@
 import { css } from '@rocket.chat/css-in-js';
-import { Box, MessageBody, Palette } from '@rocket.chat/fuselage';
+import { Box, MessageBody } from '@rocket.chat/fuselage';
+import colors from '@rocket.chat/fuselage-tokens/colors';
 import { MarkupInteractionContext, Markup, UserMention, ChannelMention } from '@rocket.chat/gazzodown';
 import { escapeRegExp } from '@rocket.chat/string-helpers';
 import { useLayout, useUserPreference } from '@rocket.chat/ui-contexts';
@@ -97,15 +98,15 @@ const MessageContentBody = ({ mentions, channels, md }: MessageContentBodyProps)
 			border-radius: 2px;
 			border-width: 2px;
 			border-style: solid;
-			background-color: ${Palette.surface['surface-tint']};
-			border-color: ${Palette.stroke['stroke-extra-light']};
-			border-inline-start-color: ${Palette.stroke['stroke-medium']};
+			background-color: var(--rcx-color-neutral-100, ${colors.n100});
+			border-color: var(--rcx-color-neutral-200, ${colors.n200});
+			border-inline-start-color: var(--rcx-color-neutral-600, ${colors.n600});
 
 			&:hover,
 			&:focus {
-				background-color: ${Palette.surface['surface-hover']};
-				border-color: ${Palette.stroke['stroke-light']};
-				border-inline-start-color: ${Palette.stroke['stroke-medium']};
+				background-color: var(--rcx-color-neutral-200, ${colors.n200});
+				border-color: var(--rcx-color-neutral-300, ${colors.n300});
+				border-inline-start-color: var(--rcx-color-neutral-600, ${colors.n600});
 			}
 		}
 		> ul.task-list {

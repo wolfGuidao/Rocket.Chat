@@ -376,8 +376,7 @@ export const Livechat = {
 		return false;
 	},
 
-	async saveGuest(guestData, userId) {
-		const { _id, name, email, phone, livechatData = {} } = guestData;
+	async saveGuest({ _id, name, email, phone, livechatData = {} }, userId) {
 		Livechat.logger.debug(`Saving data for visitor ${_id}`);
 		const updateData = {};
 
@@ -592,7 +591,7 @@ export const Livechat = {
 			const fields = LivechatCustomField.findByScope('room');
 			for await (const field of fields) {
 				if (!livechatData.hasOwnProperty(field._id)) {
-					continue;
+					return;
 				}
 				const value = s.trim(livechatData[field._id]);
 				if (value !== '' && field.regexp !== undefined && field.regexp !== '') {

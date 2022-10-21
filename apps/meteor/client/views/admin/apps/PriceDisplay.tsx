@@ -47,7 +47,7 @@ const PriceDisplay: FC<PriceDisplayProps> = ({ purchaseType, pricingPlans, price
 
 	return (
 		<Margins inlineStart='x8'>
-			<Tag medium>
+			<Tag small>
 				{showType && (
 					<Box color='default' withTruncatedText>
 						{t(type as TranslationKey)}

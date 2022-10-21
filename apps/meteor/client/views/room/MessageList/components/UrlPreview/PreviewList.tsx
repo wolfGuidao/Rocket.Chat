@@ -2,7 +2,6 @@ import { MessageBlock } from '@rocket.chat/fuselage';
 import React, { ReactElement } from 'react';
 
 import { useMessageOembedMaxWidth } from '../../../contexts/MessageContext';
-import { isValidLink } from '../../lib/isValidLink';
 import OEmbedResolver from './OEmbedResolver';
 import UrlPreview from './UrlPreview';
 
@@ -50,18 +49,6 @@ type PreviewData = {
 	data: PreviewMetadata | UrlPreview;
 };
 
-export const buildImageURL = (url: string, imageUrl: string): string => {
-	if (isValidLink(imageUrl)) {
-		return JSON.stringify(imageUrl);
-	}
-
-	const { origin } = new URL(url);
-	const imgURL = `${origin}/${imageUrl}`;
-	const normalizedUrl = imgURL.replace(/(?<!:)\/+/gm, '/');
-
-	return JSON.stringify(normalizedUrl);
-};
-
 const normalizeMeta = ({ url, meta }: OembedUrlLegacy): PreviewMetadata => {
 	const image = meta.ogImage || meta.twitterImage || meta.msapplicationTileImage || meta.oembedThumbnailUrl || meta.oembedThumbnailUrl;
 
@@ -78,7 +65,7 @@ const normalizeMeta = ({ url, meta }: OembedUrlLegacy): PreviewMetadata => {
 			authorUrl: meta.oembedAuthorUrl,
 			...(image && {
 				image: {
-					url: buildImageURL(url, image),
+					url: image,
 					dimensions: {
 						...(imageHeight && { height: imageHeight }),
 						...(imageWidth && { width: imageWidth }),

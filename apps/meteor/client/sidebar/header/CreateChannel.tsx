@@ -128,7 +128,7 @@ const CreateChannel = ({
 					<Field>
 						<Field.Label>
 							{t('Topic')}{' '}
-							<Box is='span' color='annotation'>
+							<Box is='span' color='neutral-600'>
 								({t('optional')})
 							</Box>
 						</Field.Label>

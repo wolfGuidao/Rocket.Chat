@@ -34,7 +34,6 @@ type UserCardProps = {
 	localTime?: ReactNode;
 	onClose?: () => void;
 	nickname?: string;
-	isLoading?: boolean;
 };
 
 const UserCard = forwardRef(function UserCard(
@@ -48,18 +47,23 @@ const UserCard = forwardRef(function UserCard(
 		customStatus = <Skeleton width='100%' />,
 		roles = (
 			<>
-				<Skeleton flexGrow={1} mi='x2' />
-				<Skeleton flexGrow={1} mi='x2' />
-				<Skeleton flexGrow={1} mi='x2' />
+				<Skeleton width='32%' mi='x2' />
+				<Skeleton width='32%' mi='x2' />
+				<Skeleton width='32%' mi='x2' />
 			</>
 		),
-		bio = <Skeleton width='100%' />,
+		bio = (
+			<>
+				<Skeleton width='100%' />
+				<Skeleton width='100%' />
+				<Skeleton width='100%' />
+			</>
+		),
 		status = <Status.Offline />,
 		actions,
 		localTime = <Skeleton width='100%' />,
 		onClose,
 		nickname,
-		isLoading,
 	}: UserCardProps,
 	ref,
 ) {
@@ -68,26 +72,16 @@ const UserCard = forwardRef(function UserCard(
 	return (
 		<UserCardContainer data-qa='UserCard' className={className} ref={ref} style={style}>
 			<Box>
-				{!isLoading && username ? (
-					<UserAvatar username={username} etag={etag} size='x124' />
-				) : (
-					<Skeleton borderRadius='x4' width='x124' height='x124' variant='rect' />
+				{!username ? <Skeleton width='x124' height='x124' variant='rect' /> : <UserAvatar username={username} etag={etag} size='x124' />}
+				{actions && (
+					<Box flexGrow={0} display='flex' mb='x12' alignItems='center' justifyContent='center'>
+						{actions}
+					</Box>
 				)}
-				<Box flexGrow={0} display='flex' mbs='x12' alignItems='center' justifyContent='center'>
-					{isLoading ? (
-						<>
-							<Skeleton variant='rect' height='x28' width='x28' borderRadius='x4' mi='x2' />
-							<Skeleton variant='rect' height='x28' width='x28' borderRadius='x4' mi='x2' />
-							<Skeleton variant='rect' height='x28' width='x28' borderRadius='x4' mi='x2' />
-						</>
-					) : (
-						actions
-					)}
-				</Box>
 			</Box>
 			<Box display='flex' flexDirection='column' flexGrow={1} flexShrink={1} mis='x24' width='1px'>
 				<Box mbe='x4' withTruncatedText display='flex' alignItems='center'>
-					{isLoading ? <Skeleton width='100%' /> : <UserCardUsername status={status} name={name} />}
+					{!name ? <Skeleton width='100%' /> : <UserCardUsername status={status} name={name} />}
 					{nickname && (
 						<Box flexGrow={1} flexShrink={1} flexBasis={0} title={nickname} color='hint' mis='x4' fontScale='p2' withTruncatedText>
 							({nickname})
@@ -110,7 +104,7 @@ const UserCard = forwardRef(function UserCard(
 						{typeof bio === 'string' ? <MarkdownText variant='inline' content={bio} /> : bio}
 					</UserCardInfo>
 				)}
-				{!isLoading && open && <a onClick={open}>{t('See_full_profile')}</a>}
+				{open && <a onClick={open}>{t('See_full_profile')}</a>}
 			</Box>
 			{onClose && (
 				<Box>

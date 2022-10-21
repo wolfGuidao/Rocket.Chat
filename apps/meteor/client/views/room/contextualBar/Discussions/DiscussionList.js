@@ -39,7 +39,7 @@ function DiscussionList({ total = 10, discussions = [], loadMoreItems, loading, 
 					p='x24'
 					borderBlockEndWidth='x2'
 					borderBlockEndStyle='solid'
-					borderBlockEndColor='extra-light'
+					borderBlockEndColor='neutral-200'
 					flexShrink={0}
 				>
 					<TextInput
@@ -64,7 +64,7 @@ function DiscussionList({ total = 10, discussions = [], loadMoreItems, loading, 
 				)}
 
 				{!loading && total === 0 && (
-					<Box width='full' textAlign='center' p='x24' color='annotation'>
+					<Box width='full' textAlign='center' p='x24' color='neutral-600'>
 						{t('No_Discussions_found')}
 					</Box>
 				)}

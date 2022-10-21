@@ -66,7 +66,7 @@ const BaseTeamsChannels = ({
 					</Box>
 				)}
 				{!loading && channels.length === 0 && (
-					<Box textAlign='center' p='x12' color='annotation'>
+					<Box textAlign='center' p='x12' color='neutral-600'>
 						{t('No_channels_in_team')}
 					</Box>
 				)}

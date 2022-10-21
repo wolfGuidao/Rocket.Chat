@@ -1,6 +1,7 @@
 import { VideoAttachmentProps } from '@rocket.chat/core-typings';
 import { css } from '@rocket.chat/css-in-js';
-import { Box, Palette } from '@rocket.chat/fuselage';
+import { Box } from '@rocket.chat/fuselage';
+import colors from '@rocket.chat/fuselage-tokens/colors';
 import { useMediaUrl } from '@rocket.chat/ui-contexts';
 import React, { FC } from 'react';
 
@@ -16,7 +17,7 @@ import AttachmentTitle from '../Attachment/AttachmentTitle';
 import { useCollapse } from '../hooks/useCollapse';
 
 const videoAttachmentCss = css`
-	border: 2px solid ${Palette.stroke['stroke-extra-light']} !important;
+	border: 2px solid ${colors.n200} !important;
 	border-radius: 2px;
 	display: flex;
 	flex-direction: column;

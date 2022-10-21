@@ -27,7 +27,7 @@ const Item: FC<{
 			pbe={12}
 			pi={24}
 			borderBlockEndWidth='2px'
-			borderBlockEndColor='light'
+			borderBlockEndColor='neutral-200'
 			borderBlockEndStyle='solid'
 			onClick={onClickItem}
 			className={clickable}
@@ -39,7 +39,7 @@ const Item: FC<{
 					<Box fontScale='p2m' withTruncatedText>
 						!{data.shortcut}
 					</Box>
-					<Box fontScale='c1' color='hint' withTruncatedText>
+					<Box fontScale='c1' color='info' withTruncatedText>
 						{scope}
 					</Box>
 				</Box>
@@ -53,10 +53,10 @@ const Item: FC<{
 					>
 						{t('Use')}
 					</Button>
-					<Icon name='chevron-left' size={24} color='hint' />
+					<Icon name='chevron-left' size={24} color='neutral-700' />
 				</Box>
 			</Box>
-			<Box fontScale='p2' mbs='8px' color='hint' withTruncatedText>
+			<Box fontScale='p2' mbs='8px' color='info' withTruncatedText>
 				"{data.text}"
 			</Box>
 			{data.tags && data.tags.length > 0 && (

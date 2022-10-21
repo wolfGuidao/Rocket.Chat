@@ -126,10 +126,7 @@ const CurrentChatsRoute = (): ReactElement => {
 	const t = useTranslation();
 	const id = useRouteParameter('id');
 
-	const query = useMemo(
-		() => currentChatQuery(params, customFields, [sortBy, sortDirection]),
-		[customFields, params, sortBy, sortDirection],
-	);
+	const query = currentChatQuery(params, customFields, [sortBy, sortDirection]);
 	const canViewCurrentChats = usePermission('view-livechat-current-chats');
 	const canRemoveClosedChats = usePermission('remove-closed-livechat-room');
 	const directoryRoute = useRoute('omnichannel-current-chats');

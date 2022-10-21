@@ -19,10 +19,10 @@ const MessageFooterCallout = forwardRef<
 			})}
 			display='flex'
 			borderWidth={2}
-			borderColor='light'
+			borderColor='neutral-500'
 			borderRadius='x4'
 			p='x8'
-			backgroundColor='surface-tint'
+			backgroundColor='neutral-200'
 			alignItems='center'
 			minHeight='x48'
 			justifyContent='center'

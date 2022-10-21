@@ -28,11 +28,7 @@ const OEmbedPreviewContent = ({
 
 	return (
 		<MessageGenericPreviewContent thumb={thumb}>
-			{title && (
-				<MessageGenericPreviewTitle externalUrl={url} title={title}>
-					{title}
-				</MessageGenericPreviewTitle>
-			)}
+			{title && <MessageGenericPreviewTitle externalUrl={url}>{title}</MessageGenericPreviewTitle>}
 			{description && <MessageGenericPreviewDescription>{description}</MessageGenericPreviewDescription>}
 			{(showSiteName || showAuthorName) && (
 				<MessageGenericPreviewFooter>

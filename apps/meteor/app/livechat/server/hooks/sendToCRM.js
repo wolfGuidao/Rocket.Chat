@@ -64,8 +64,7 @@ function sendToCRM(type, room, includeMessages = true) {
 			const msg = {
 				_id: message._id,
 				username: message.u.username,
-				msg: message.msg || JSON.stringify(message.blocks),
-				...(message.blocks && message.blocks.length > 0 ? { blocks: message.blocks } : {}),
+				msg: message.msg,
 				ts: message.ts,
 				editedAt: message.editedAt,
 			};

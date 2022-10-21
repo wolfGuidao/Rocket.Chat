@@ -138,7 +138,7 @@ const ForwardChatModal = ({
 				<Field marginBlock='x15'>
 					<Field.Label>
 						{t('Leave_a_comment')}{' '}
-						<Box is='span' color='annotation'>
+						<Box is='span' color='neutral-600'>
 							({t('Optional')})
 						</Box>
 					</Field.Label>

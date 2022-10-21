@@ -2705,9 +2705,6 @@ export type OmnichannelEndpoints = {
 	'/v1/livechat/room.forward': {
 		POST: (params: LiveChatRoomForward) => void;
 	};
-	'/v1/livechat/room.saveInfo': {
-		POST: (params: LiveChatRoomSaveInfo) => void;
-	};
 	'/v1/livechat/monitors': {
 		GET: (params: LivechatMonitorsListProps) => PaginatedResult<{
 			monitors: ILivechatMonitor[];

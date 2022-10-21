@@ -1,5 +1,6 @@
 import { css } from '@rocket.chat/css-in-js';
-import { Box, Divider, Palette, SidebarFooter as Footer } from '@rocket.chat/fuselage';
+import { Box, Divider, SidebarFooter as Footer } from '@rocket.chat/fuselage';
+import colors from '@rocket.chat/fuselage-tokens/colors.json';
 import React, { ReactElement } from 'react';
 
 import { settings } from '../../../app/settings/client';
@@ -13,13 +14,14 @@ const SidebarFooterDefault = (): ReactElement => {
 		}
 
 		& a:any-link {
-			color: ${Palette.text['font-on-info']};
+			color: ${colors.n600};
+			color: var(--rc-color-primary-light, ${colors.n600});
 		}
 	`;
 
 	return (
 		<Footer>
-			<Divider mbs={-2} mbe={0} borderColor='neutral-900-40' />
+			<Divider mbs={-2} mbe={0} borderColor={`${colors.n900}40`} />
 			<Box
 				is='footer'
 				pb='x12'

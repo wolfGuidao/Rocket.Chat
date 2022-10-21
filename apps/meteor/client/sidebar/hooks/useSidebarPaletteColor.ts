@@ -64,10 +64,9 @@ const query = { _id: /theme-color-rc/ };
 const useTheme = (): { [key: string]: string } => {
 	const customColors = useSettings(query) as { value: string; _id: string }[];
 	const result = useMemo(() => {
-		const sidebarSurface = customColors.find(({ _id }) => _id === 'theme-color-rc-color-primary-background');
-
 		const n900 = customColors.find(({ _id }) => _id === 'theme-color-rc-color-primary-darkest');
 		const n800 = customColors.find(({ _id }) => _id === 'theme-color-rc-color-primary-dark');
+		const sibebarSurface = customColors.find(({ _id }) => _id === 'theme-color-rc-color-primary-background');
 		const n700 = customColors.find(({ _id }) => _id === '');
 		const n600 = customColors.find(({ _id }) => _id === 'theme-color-rc-color-primary-light');
 		const n500 = customColors.find(({ _id }) => _id === 'theme-color-rc-primary-light-medium');
@@ -81,7 +80,7 @@ const useTheme = (): { [key: string]: string } => {
 			...colors,
 			...(n900 && { n900: n900.value }),
 			...(n800 && { n800: n800.value }),
-			...((sidebarSurface || n800) && { sidebarSurface: sidebarSurface?.value || n800?.value }),
+			...((sibebarSurface || n800) && { sibebarSurface: sibebarSurface?.value || n800?.value }),
 			...(n700 && { n700: n700.value }),
 			...(n600 && { n600: n600.value }),
 			...(n500 && { n500: n500.value }),
@@ -127,8 +126,8 @@ const getStyle = (
 			--rcx-button-icon-active-border-color: ${toVar(colors.n900)};
 			--rcx-button-icon-active-background-color: ${toVar(colors.n800)};
 			--rcx-button-icon-color: ${toVar(colors.n600)};
-			--rcx-button-icon-border-color: ${toVar(colors.sidebarSurface)};
-			--rcx-button-icon-background-color: ${toVar(colors.sidebarSurface)};
+			--rcx-button-icon-border-color: ${toVar(colors.sibebarSurface)};
+			--rcx-button-icon-background-color: ${toVar(colors.sibebarSurface)};
 			--rcx-button-icon-hover-background-color: ${toVar(colors.n900)};
 			--rcx-button-icon-hover-border-color: ${toVar(colors.n900)};
 			--rcx-button-icon-focus-background-color:  var(--rcx-color-neutral-300);
@@ -138,8 +137,8 @@ const getStyle = (
 			--rcx-button-icon-success-active-border-color: ${toVar(colors.n900)};
 			--rcx-button-icon-success-active-background-color: ${toVar(colors.n800)};
 			--rcx-button-icon-success-color: ${toVar(colors.n600)};
-			--rcx-button-icon-success-border-color: ${toVar(colors.sidebarSurface)};
-			--rcx-button-icon-success-background-color: ${toVar(colors.sidebarSurface)};
+			--rcx-button-icon-success-border-color: ${toVar(colors.sibebarSurface)};
+			--rcx-button-icon-success-background-color: ${toVar(colors.sibebarSurface)};
 			--rcx-button-icon-success-hover-background-color: ${toVar(colors.n900)};
 			--rcx-button-icon-success-hover-border-color: ${toVar(colors.n900)};
 
@@ -174,7 +173,7 @@ const getStyle = (
 		}
 
 		.rcx-sidebar {
-			background-color: ${toVar(colors.sidebarSurface)};
+			background-color: ${toVar(colors.sibebarSurface)};
 		}
 		`
 )(isIE11 ? ':root' : modifier);

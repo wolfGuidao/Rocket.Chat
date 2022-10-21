@@ -8,10 +8,6 @@ import { registerServiceModels } from '../../../../apps/meteor/ee/server/lib/reg
 
 const PORT = process.env.PORT || 3035;
 
-const instancePing = parseInt(String(process.env.MULTIPLE_INSTANCES_PING_INTERVAL)) || 10000;
-
-const maxDocMs = instancePing * 4; // 4 times the ping interval
-
 (async () => {
 	const db = await getConnection();
 
@@ -23,31 +19,14 @@ const maxDocMs = instancePing * 4; // 4 times the ping interval
 
 	// need to import service after models are registered
 	const { StreamHub } = await import('./StreamHub');
-	const { DatabaseWatcher } = await import('../../../../apps/meteor/server/database/DatabaseWatcher');
 
-	const watcher = new DatabaseWatcher({ db });
-
-	api.registerService(new StreamHub(watcher));
+	api.registerService(new StreamHub(db));
 
 	await api.start();
 
 	polka()
 		.get('/health', async function (_req, res) {
-			try {
-				await api.nodeList();
-
-				const lastDocMs = watcher.getLastDocDelta();
-				if (lastDocMs > maxDocMs) {
-					throw new Error('not healthy');
-				}
-			} catch (err) {
-				console.error('Service not healthy', err);
-
-				res.writeHead(500);
-				res.end('not healthy');
-				return;
-			}
-
+			await api.nodeList();
 			res.end('ok');
 		})
 		.listen(PORT);

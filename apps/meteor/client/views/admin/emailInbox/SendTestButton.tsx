@@ -1,39 +1,30 @@
-import { IEmailInboxPayload } from '@rocket.chat/core-typings';
-import { Box, Button, TableCell, Icon } from '@rocket.chat/fuselage';
+import { IconButton, TableCell } from '@rocket.chat/fuselage';
 import { useToastMessageDispatch, useEndpoint, useTranslation } from '@rocket.chat/ui-contexts';
 import React, { ReactElement } from 'react';
 
-const SendTestButton = ({ id }: { id: IEmailInboxPayload['_id'] }): ReactElement => {
+type SendTestButtonProps = {
+	id: string;
+};
+
+const SendTestButton = ({ id }: SendTestButtonProps): ReactElement => {
 	const t = useTranslation();
+
 	const dispatchToastMessage = useToastMessageDispatch();
 	const sendTest = useEndpoint('POST', `/v1/email-inbox.send-test/${id}`);
 
-	const handleOnClick = async (e: React.MouseEvent<HTMLElement, MouseEvent>): Promise<void> => {
+	const handleOnClick = (e: React.MouseEvent<HTMLElement, MouseEvent>): void => {
 		e.preventDefault();
 		e.stopPropagation();
-
-		try {
-			await sendTest();
-			dispatchToastMessage({
-				type: 'success',
-				message: t('Email_sent'),
-			});
-		} catch (error) {
-			dispatchToastMessage({
-				type: 'error',
-				message: error,
-			});
-		}
+		sendTest();
+		dispatchToastMessage({
+			type: 'success',
+			message: t('Email_sent'),
+		});
 	};
 
 	return (
-		<TableCell withTruncatedText>
-			<Button small onClick={handleOnClick}>
-				<Box display='flex' alignItems='center'>
-					<Icon mie='x4' size='x16' name='send' />
-					{t('Send_Test_Email')}
-				</Box>
-			</Button>
+		<TableCell fontScale='p2' color='hint' withTruncatedText>
+			<IconButton icon='send' small title={t('Send_Test_Email')} onClick={handleOnClick} />
 		</TableCell>
 	);
 };

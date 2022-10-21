@@ -1,5 +1,3 @@
-import type { Page } from '@playwright/test';
-
 import { expect, test } from './utils/test';
 import { HomeChannel } from './page-objects';
 import { createTargetChannel } from './utils';
@@ -19,14 +17,6 @@ test.describe.serial('message-actions', () => {
 
 		await page.goto('/home');
 		await poHomeChannel.sidenav.openChat(targetChannel);
-	});
-
-	test('expect reply the message in direct', async ({ page }) => {
-		await poHomeChannel.content.sendMessage('this is a message for reply in direct');
-		await poHomeChannel.content.openLastMessageMenu();
-		await page.locator('li', { hasText: 'Reply in Direct Message' }).click();
-
-		await expect(page).toHaveURL(/.*reply/);
 	});
 
 	test('expect reply the message', async ({ page }) => {
@@ -82,41 +72,5 @@ test.describe.serial('message-actions', () => {
 		await poHomeChannel.content.sendMessage('Message to permalink');
 		await poHomeChannel.content.openLastMessageMenu();
 		await page.locator('[data-qa-id="permalink"]').click();
-	});
-
-	test.describe('Preference Hide Right Sidebar with Click Enabled', () => {
-		let adminPage: Page;
-
-		test.beforeAll(async ({ browser }) => {
-			adminPage = await browser.newPage({ storageState: 'admin-session.json' });
-
-			await adminPage.goto('/account/preferences');
-			await adminPage.locator('role=heading[name="Messages"]').click();
-			await adminPage.locator('text="Hide Right Sidebar with Click"').click();
-		});
-
-		test.afterAll(async ({ browser }) => {
-			adminPage = await browser.newPage({ storageState: 'admin-session.json' });
-
-			await adminPage.goto('/account/preferences');
-			await adminPage.locator('role=heading[name="Messages"]').click();
-			await adminPage.locator('text="Hide Right Sidebar with Click"').click();
-			await adminPage.close();
-		});
-
-		test.beforeEach(async ({ page }) => {
-			poHomeChannel = new HomeChannel(page);
-
-			await page.goto('/home');
-			await poHomeChannel.sidenav.openChat(targetChannel);
-		});
-
-		test('expect reply the message in direct', async ({ page }) => {
-			await poHomeChannel.content.sendMessage('this is a message for reply in direct');
-			await poHomeChannel.content.openLastMessageMenu();
-			await page.locator('li', { hasText: 'Reply in Direct Message' }).click();
-
-			await expect(page).toHaveURL(/.*reply/);
-		});
 	});
 });

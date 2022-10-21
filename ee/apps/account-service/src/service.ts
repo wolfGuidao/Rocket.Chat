@@ -26,15 +26,8 @@ const PORT = process.env.PORT || 3033;
 
 	polka()
 		.get('/health', async function (_req, res) {
-			try {
-				await api.nodeList();
-				res.end('ok');
-			} catch (err) {
-				console.error('Service not healthy', err);
-
-				res.writeHead(500);
-				res.end('not healthy');
-			}
+			await api.nodeList();
+			res.end('ok');
 		})
 		.listen(PORT);
 })();

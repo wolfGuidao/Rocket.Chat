@@ -9,7 +9,7 @@ import { createVisitor, createLivechatRoom, takeInquiry, createAgent } from '../
 import { updatePermission, updateSetting } from '../../../data/permissions.helper';
 import { IS_EE } from '../../../e2e/config/constants';
 
-(IS_EE ? describe.only : describe.only)('[EE] LIVECHAT - SLAs', function () {
+(IS_EE ? describe : describe.skip)('[EE] LIVECHAT - SLAs', function () {
 	this.retries(0);
 
 	before((done) => getCredentials(done));

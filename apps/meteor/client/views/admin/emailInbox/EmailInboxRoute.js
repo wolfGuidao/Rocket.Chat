@@ -1,10 +1,10 @@
 import { usePermission } from '@rocket.chat/ui-contexts';
-import React, { ReactElement } from 'react';
+import React from 'react';
 
 import NotAuthorizedPage from '../../notAuthorized/NotAuthorizedPage';
 import EmailInboxPage from './EmailInboxPage';
 
-const EmailInboxRoute = (): ReactElement => {
+function EmailInboxRoute() {
 	const canViewEmailInbox = usePermission('manage-email-inbox');
 
 	if (!canViewEmailInbox) {
@@ -12,6 +12,6 @@ const EmailInboxRoute = (): ReactElement => {
 	}
 
 	return <EmailInboxPage />;
-};
+}
 
 export default EmailInboxRoute;

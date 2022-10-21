@@ -140,15 +140,8 @@ export class DDPStreamer extends ServiceClass {
 		this.app = polka()
 			.use(proxy())
 			.get('/health', async (_req, res) => {
-				try {
-					await this.api.nodeList();
-					res.end('ok');
-				} catch (err) {
-					console.error('Service not healthy', err);
-
-					res.writeHead(500);
-					res.end('not healthy');
-				}
+				await this.api.nodeList();
+				res.end('ok');
 			})
 			.get('*', function (_req, res) {
 				res.setHeader('Access-Control-Allow-Origin', '*');

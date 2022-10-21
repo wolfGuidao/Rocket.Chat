@@ -6,15 +6,15 @@ import { useCollapse } from '../../../../../components/message/Attachments/hooks
 import OEmbedPreviewContent from './OEmbedPreviewContent';
 import type { PreviewMetadata } from './PreviewList';
 
-type OEmbedCollapsibleProps = { children?: ReactNode } & PreviewMetadata;
+type OEmbedCollapseableProps = { thumb?: ReactElement; children?: ReactNode } & PreviewMetadata;
 
-const OEmbedCollapsible = ({ children, ...props }: OEmbedCollapsibleProps): ReactElement => {
+const OEmbedCollapseable = ({ children, ...props }: OEmbedCollapseableProps): ReactElement => {
 	const t = useTranslation();
 	const [collapsed, collapse] = useCollapse(false);
 
 	return (
 		<>
-			<Box display='flex' flexDirection='row' color='hint' fontScale='c1' alignItems='center'>
+			<Box display='flex' flexDirection='row' color='hint' fontScale='c1'>
 				{t('Link_Preview')} {collapse}
 			</Box>
 			<MessageGenericPreview>
@@ -25,4 +25,4 @@ const OEmbedCollapsible = ({ children, ...props }: OEmbedCollapsibleProps): Reac
 	);
 };
 
-export default OEmbedCollapsible;
+export default OEmbedCollapseable;

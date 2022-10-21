@@ -91,29 +91,6 @@ describe('Email inbox', () => {
 
 	describe('POST email-inbox', () => {
 		let inboxId: string;
-		const mockedPayload = {
-			name: 'test',
-			active: false,
-			email: `test${new Date().getTime()}@test.com`,
-			description: 'Updated test description',
-			senderInfo: 'test',
-			department: 'test',
-			smtp: {
-				server: 'smtp.example.com',
-				port: 587,
-				username: 'xxxx',
-				password: 'xxxx',
-				secure: true,
-			},
-			imap: {
-				server: 'imap.example.com',
-				port: 993,
-				username: 'xxxx',
-				password: 'xxxx',
-				secure: true,
-				maxRetries: 10,
-			},
-		};
 		it('should fail if user doesnt have manage-email-inbox permission', async () => {
 			await updatePermission('manage-email-inbox', []);
 			await request.post(api('email-inbox')).set(credentials).send({}).expect(403);
@@ -123,33 +100,206 @@ describe('Email inbox', () => {
 			await request.post(api('email-inbox')).set(credentials).send({}).expect(400);
 		});
 		it('should fail if imap config is not on body params', async () => {
-			const { imap, ...payload } = mockedPayload;
-			await request.post(api('email-inbox')).set(credentials).send(payload).expect(400);
+			await request
+				.post(api('email-inbox'))
+				.set(credentials)
+				.send({
+					smtp: {
+						server: 'smtp.example.com',
+						port: 587,
+						username: 'xxxx',
+						password: 'xxxx',
+						secure: true,
+					},
+				})
+				.expect(400);
 		});
 		it('should fail if name is not on body params', async () => {
 			await updatePermission('manage-email-inbox', ['admin']);
-			const { name, ...payload } = mockedPayload;
-			await request.post(api('email-inbox')).set(credentials).send(payload).expect(400);
+			await request
+				.post(api('email-inbox'))
+				.set(credentials)
+				.send({
+					smtp: {
+						server: 'smtp.example.com',
+						port: 587,
+						username: 'xxxx',
+						password: 'xxxx',
+						secure: true,
+					},
+					imap: {
+						server: 'imap.example.com',
+						port: 993,
+						username: 'xxxx',
+						password: 'xxxx',
+						secure: true,
+						maxRetries: 10,
+					},
+				})
+				.expect(400);
 		});
 		it('should fail if active is not on body params', async () => {
 			await updatePermission('manage-email-inbox', ['admin']);
-			const { active, ...payload } = mockedPayload;
-			await request.post(api('email-inbox')).set(credentials).send(payload).expect(400);
+			await request
+				.post(api('email-inbox'))
+				.set(credentials)
+				.send({
+					name: 'test',
+					smtp: {
+						server: 'smtp.example.com',
+						port: 587,
+						username: 'xxxx',
+						password: 'xxxx',
+						secure: true,
+					},
+					imap: {
+						server: 'imap.example.com',
+						port: 993,
+						username: 'xxxx',
+						password: 'xxxx',
+						secure: true,
+						maxRetries: 10,
+					},
+				})
+				.expect(400);
 		});
 		it('should fail if email is not on body params', async () => {
 			await updatePermission('manage-email-inbox', ['admin']);
-			const { email, ...payload } = mockedPayload;
-			await request.post(api('email-inbox')).set(credentials).send(payload).expect(400);
+			await request
+				.post(api('email-inbox'))
+				.set(credentials)
+				.send({
+					name: 'test',
+					active: true,
+					smtp: {
+						server: 'smtp.example.com',
+						port: 587,
+						username: 'xxxx',
+						password: 'xxxx',
+						secure: true,
+					},
+					imap: {
+						server: 'imap.example.com',
+						port: 993,
+						username: 'xxxx',
+						password: 'xxxx',
+						secure: true,
+						maxRetries: 10,
+					},
+				})
+				.expect(400);
+		});
+		it('should fail if description is not on body params', async () => {
+			await updatePermission('manage-email-inbox', ['admin']);
+			await request
+				.post(api('email-inbox'))
+				.set(credentials)
+				.send({
+					name: 'test',
+					active: true,
+					email: 'test@test.com',
+					smtp: {
+						server: 'smtp.example.com',
+						port: 587,
+						username: 'xxxx',
+						password: 'xxxx',
+						secure: true,
+					},
+					imap: {
+						server: 'imap.example.com',
+						port: 993,
+						username: 'xxxx',
+						password: 'xxxx',
+						secure: true,
+						maxRetries: 10,
+					},
+				})
+				.expect(400);
+		});
+		it('should fail if senderInfo is not on body params', async () => {
+			await updatePermission('manage-email-inbox', ['admin']);
+			await request
+				.post(api('email-inbox'))
+				.set(credentials)
+				.send({
+					name: 'test',
+					active: true,
+					email: 'test@test.com',
+					description: 'test',
+					smtp: {
+						server: 'smtp.example.com',
+						port: 587,
+						username: 'xxxx',
+						password: 'xxxx',
+						secure: true,
+					},
+					imap: {
+						server: 'imap.example.com',
+						port: 993,
+						username: 'xxxx',
+						password: 'xxxx',
+						secure: true,
+						maxRetries: 10,
+					},
+				})
+				.expect(400);
+		});
+		it('should fail if department is not on body params', async () => {
+			await updatePermission('manage-email-inbox', ['admin']);
+			await request
+				.post(api('email-inbox'))
+				.set(credentials)
+				.send({
+					name: 'test',
+					active: true,
+					email: 'test@test.com',
+					description: 'test',
+					senderInfo: 'test',
+					smtp: {
+						server: 'smtp.example.com',
+						port: 587,
+						username: 'xxxx',
+						password: 'xxxx',
+						secure: true,
+					},
+					imap: {
+						server: 'imap.example.com',
+						port: 993,
+						username: 'xxxx',
+						password: 'xxxx',
+						secure: true,
+						maxRetries: 10,
+					},
+				})
+				.expect(400);
 		});
 		it('should save an email inbox', async () => {
 			await updatePermission('manage-email-inbox', ['admin']);
-			const { email, ...payload } = mockedPayload;
 			const { body } = await request
 				.post(api('email-inbox'))
 				.set(credentials)
 				.send({
-					...payload,
+					name: 'test',
+					active: false,
 					email: `test${new Date().getTime()}@test.com`,
+					description: 'test',
+					senderInfo: 'test',
+					department: 'test',
+					smtp: {
+						server: 'smtp.example.com',
+						port: 587,
+						username: 'xxxx',
+						password: 'xxxx',
+						secure: true,
+					},
+					imap: {
+						server: 'imap.example.com',
+						port: 993,
+						username: 'xxxx',
+						password: 'xxxx',
+						secure: true,
+						maxRetries: 10,
+					},
 				})
 				.expect(200);
 
@@ -162,9 +312,28 @@ describe('Email inbox', () => {
 				.post(api('email-inbox'))
 				.set(credentials)
 				.send({
-					...mockedPayload,
 					_id: inboxId,
+					name: 'test',
+					active: false,
+					email: `test${new Date().getTime()}@test.com`,
 					description: 'Updated test description',
+					senderInfo: 'test',
+					department: 'test',
+					smtp: {
+						server: 'smtp.example.com',
+						port: 587,
+						username: 'xxxx',
+						password: 'xxxx',
+						secure: true,
+					},
+					imap: {
+						server: 'imap.example.com',
+						port: 993,
+						username: 'xxxx',
+						password: 'xxxx',
+						secure: true,
+						maxRetries: 10,
+					},
 				})
 				.expect(200);
 
@@ -176,9 +345,11 @@ describe('Email inbox', () => {
 			await updatePermission('manage-email-inbox', []);
 			await request.get(api('email-inbox/123')).set(credentials).expect(403);
 		});
-		it('should fail when email inbox does not exist', async () => {
+		it('should return nothing when email inbox does not exist', async () => {
 			await updatePermission('manage-email-inbox', ['admin']);
-			await request.get(api('email-inbox/123')).set(credentials).expect(404);
+			const { body } = await request.get(api('email-inbox/123')).set(credentials).expect(200);
+
+			expect(body.body).to.be.null;
 		});
 		it('should return an email inbox', async () => {
 			const inbox = await createEmailInbox();
