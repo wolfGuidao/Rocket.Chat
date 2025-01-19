@@ -1,10 +1,9 @@
-import { Meteor } from 'meteor/meteor';
-import { TAPi18n } from 'meteor/rocketchat:tap-i18n';
-import { escapeRegExp } from '@rocket.chat/string-helpers';
 import type { IMessage, IUser } from '@rocket.chat/core-typings';
 import { isFileAttachment, isFileImageAttachment } from '@rocket.chat/core-typings';
+import { escapeRegExp } from '@rocket.chat/string-helpers';
 
 import { callbacks } from '../../../../../lib/callbacks';
+import { i18n } from '../../../../../server/lib/i18n';
 import { settings } from '../../../../settings/server';
 
 /**
@@ -12,16 +11,20 @@ import { settings } from '../../../../settings/server';
  *
  * @param {object} message the message to be parsed
  */
-export function parseMessageTextPerUser(messageText: string, message: IMessage, receiver: IUser): string {
+export async function parseMessageTextPerUser(
+	messageText: string,
+	message: Pick<IMessage, 'u' | 'msg' | 't' | 'attachments'>,
+	receiver: Pick<IUser, 'language'>,
+): Promise<string> {
 	const lng = receiver.language || settings.get('Language') || 'en';
 
 	const firstAttachment = message.attachments?.[0];
 	if (!message.msg && firstAttachment && isFileAttachment(firstAttachment) && isFileImageAttachment(firstAttachment)) {
-		return firstAttachment.image_type ? TAPi18n.__('User_uploaded_image', { lng }) : TAPi18n.__('User_uploaded_file', { lng });
+		return firstAttachment.image_type ? i18n.t('User_uploaded_image', { lng }) : i18n.t('User_uploaded_file', { lng });
 	}
 
 	if (message.msg && message.t === 'e2e') {
-		return TAPi18n.__('Encrypted_message', { lng });
+		return i18n.t('Encrypted_message', { lng });
 	}
 
 	// perform processing required before sending message as notification such as markdown filtering
@@ -37,45 +40,10 @@ export function parseMessageTextPerUser(messageText: string, message: IMessage, 
  * @returns {string}
  */
 export function replaceMentionedUsernamesWithFullNames(message: string, mentions: NonNullable<IMessage['mentions']>): string {
-	if (!mentions?.length) {
-		return message;
-	}
 	mentions.forEach((mention) => {
 		if (mention.name) {
 			message = message.replace(new RegExp(escapeRegExp(`@${mention.username}`), 'g'), mention.name);
 		}
 	});
 	return message;
-}
-
-/**
- * Checks if a message contains a user highlight
- *
- * @param {string} message
- * @param {array|undefined} highlights
- *
- * @returns {boolean}
- */
-export function messageContainsHighlight(message: IMessage, highlights: string[]): boolean {
-	if (!highlights || highlights.length === 0) {
-		return false;
-	}
-
-	return highlights.some((highlight: string) => {
-		const regexp = new RegExp(escapeRegExp(highlight), 'i');
-		return regexp.test(message.msg);
-	});
-}
-
-export function callJoinRoom(userId: string, rid: string): Promise<void> {
-	return new Promise((resolve, reject) => {
-		Meteor.runAsUser(userId, () =>
-			Meteor.call('joinRoom', rid, (error: unknown, result: any) => {
-				if (error) {
-					return reject(error);
-				}
-				return resolve(result);
-			}),
-		);
-	});
 }

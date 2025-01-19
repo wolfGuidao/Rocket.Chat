@@ -1,13 +1,14 @@
 import { useUser } from '@rocket.chat/ui-contexts';
-import { TAPi18n } from 'meteor/rocketchat:tap-i18n';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
-import * as banners from '../../../lib/banners';
 import { useDismissUserBannerMutation } from './useDismissUserBannerMutation';
+import * as banners from '../../../lib/banners';
 
 export const useUserBanners = () => {
 	const user = useUser();
 
+	const { t, i18n } = useTranslation();
 	const { mutate: dismissUserBanner } = useDismissUserBannerMutation();
 
 	useEffect(() => {
@@ -25,11 +26,13 @@ export const useUserBanners = () => {
 
 		banners.open({
 			id: firstBanner.id,
-			title: TAPi18n.__(firstBanner.title),
-			text: TAPi18n.__(firstBanner.text, {
-				postProcess: 'sprintf',
-				sprintf: firstBanner.textArguments ?? [],
-			}),
+			title: i18n.exists(firstBanner.title) ? t(firstBanner.title) : firstBanner.title,
+			text: i18n.exists(firstBanner.text)
+				? t(firstBanner.text, {
+						postProcess: 'sprintf',
+						sprintf: firstBanner.textArguments,
+					})
+				: firstBanner.text,
 			modifiers: firstBanner.modifiers,
 			action() {
 				if (firstBanner.link) {
@@ -40,5 +43,5 @@ export const useUserBanners = () => {
 				dismissUserBanner({ id: firstBanner.id });
 			},
 		});
-	}, [dismissUserBanner, user?.banners]);
+	}, [dismissUserBanner, i18n, t, user?.banners]);
 };

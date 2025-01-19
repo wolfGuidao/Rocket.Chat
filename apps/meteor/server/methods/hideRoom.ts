@@ -1,18 +1,37 @@
-import { Meteor } from 'meteor/meteor';
-import { check } from 'meteor/check';
-import type { ServerMethods } from '@rocket.chat/ui-contexts';
+import type { ServerMethods } from '@rocket.chat/ddp-client';
 import { Subscriptions } from '@rocket.chat/models';
+import { check } from 'meteor/check';
+import { Meteor } from 'meteor/meteor';
 
-declare module '@rocket.chat/ui-contexts' {
+import { notifyOnSubscriptionChangedByRoomIdAndUserId } from '../../app/lib/server/lib/notifyListener';
+
+declare module '@rocket.chat/ddp-client' {
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	interface ServerMethods {
 		hideRoom(rid: string): Promise<number>;
 	}
 }
 
+export const hideRoomMethod = async (userId: string, rid: string): Promise<number> => {
+	check(rid, String);
+
+	if (!userId) {
+		throw new Meteor.Error('error-invalid-user', 'Invalid user', {
+			method: 'hideRoom',
+		});
+	}
+
+	const { modifiedCount } = await Subscriptions.hideByRoomIdAndUserId(rid, userId);
+
+	if (modifiedCount) {
+		void notifyOnSubscriptionChangedByRoomIdAndUserId(rid, userId);
+	}
+
+	return modifiedCount;
+};
+
 Meteor.methods<ServerMethods>({
 	async hideRoom(rid) {
-		check(rid, String);
 		const uid = Meteor.userId();
 
 		if (!uid) {
@@ -21,6 +40,6 @@ Meteor.methods<ServerMethods>({
 			});
 		}
 
-		return (await Subscriptions.hideByRoomIdAndUserId(rid, uid)).modifiedCount;
+		return hideRoomMethod(uid, rid);
 	},
 });

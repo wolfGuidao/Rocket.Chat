@@ -1,17 +1,17 @@
-import { Meteor } from 'meteor/meteor';
-import { Match, check } from 'meteor/check';
-import _ from 'underscore';
-import type { ServerMethods } from '@rocket.chat/ui-contexts';
 import type { IRoom } from '@rocket.chat/core-typings';
+import type { ServerMethods } from '@rocket.chat/ddp-client';
 import { Rooms, Subscriptions, Users } from '@rocket.chat/models';
+import { Match, check } from 'meteor/check';
+import { Meteor } from 'meteor/meteor';
 import type { FindOptions } from 'mongodb';
+import _ from 'underscore';
 
 import { hasPermissionAsync } from '../../app/authorization/server/functions/hasPermission';
-import { getUserPreference } from '../../app/utils/server';
 import { settings } from '../../app/settings/server';
+import { getUserPreference } from '../../app/utils/server/lib/getUserPreference';
 import { trim } from '../../lib/utils/stringUtils';
 
-declare module '@rocket.chat/ui-contexts' {
+declare module '@rocket.chat/ddp-client' {
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	interface ServerMethods {
 		channelsList(filter: string, channelType: string, limit?: number, sort?: string): { channels: IRoom[] };

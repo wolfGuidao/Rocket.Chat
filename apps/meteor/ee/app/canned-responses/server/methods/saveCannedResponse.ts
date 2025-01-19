@@ -1,13 +1,13 @@
-import { Meteor } from 'meteor/meteor';
-import { Match, check } from 'meteor/check';
-import type { ServerMethods } from '@rocket.chat/ui-contexts';
+import type { IOmnichannelCannedResponse, ILivechatDepartment } from '@rocket.chat/core-typings';
+import type { ServerMethods } from '@rocket.chat/ddp-client';
 import { LivechatDepartment, CannedResponse, Users } from '@rocket.chat/models';
-import type { IOmnichannelCannedResponse } from '@rocket.chat/core-typings';
+import { Match, check } from 'meteor/check';
+import { Meteor } from 'meteor/meteor';
 
 import { hasPermissionAsync } from '../../../../../app/authorization/server/functions/hasPermission';
 import notifications from '../../../../../app/notifications/server/lib/Notifications';
 
-declare module '@rocket.chat/ui-contexts' {
+declare module '@rocket.chat/ddp-client' {
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	interface ServerMethods {
 		saveCannedResponse(
@@ -76,7 +76,10 @@ Meteor.methods<ServerMethods>({
 			});
 		}
 
-		if (responseData.departmentId && !(await LivechatDepartment.findOneById(responseData.departmentId))) {
+		if (
+			responseData.departmentId &&
+			!(await LivechatDepartment.findOneById<Pick<ILivechatDepartment, '_id'>>(responseData.departmentId, { projection: { _id: 1 } }))
+		) {
 			throw new Meteor.Error('error-invalid-department', 'Invalid department', {
 				method: 'saveCannedResponse',
 			});

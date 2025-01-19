@@ -1,4 +1,5 @@
 import type { RoomType } from '@rocket.chat/core-typings';
+import type { LocationPathname } from '@rocket.chat/ui-contexts';
 
 import type {
 	IRoomTypeConfig,
@@ -40,7 +41,7 @@ export abstract class RoomCoordinator {
 		return this.roomTypes[identifier].config;
 	}
 
-	public getRouteLink(roomType: string, subData: RoomIdentification): string | false {
+	public getRouteLink(roomType: string, subData: RoomIdentification): LocationPathname | false {
 		const config = this.getRoomTypeConfig(roomType);
 		if (!config?.route) {
 			return false;
@@ -60,7 +61,7 @@ export abstract class RoomCoordinator {
 		const fields = routeData;
 
 		const regExp = /(:[\w\(\)\\\+\*\.\?]+)+/g;
-		let path = pathDef.replace(regExp, function (key) {
+		let path = pathDef.replace(regExp, (key) => {
 			const firstRegexpChar = key.indexOf('(');
 			// get the content behind : and (\\d+/)
 			key = key.substring(1, firstRegexpChar > 0 ? firstRegexpChar : undefined);
@@ -76,7 +77,7 @@ export abstract class RoomCoordinator {
 		// but keep the root slash if it's the only one
 		path = path.match(/^\/{1}$/) ? path : path.replace(/\/$/, '');
 
-		return path;
+		return path as LocationPathname;
 	}
 
 	protected getRouteData(roomType: string, subData: RoomIdentification): Record<string, string> | false {

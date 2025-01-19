@@ -1,16 +1,16 @@
-import { Meteor } from 'meteor/meteor';
-import { check } from 'meteor/check';
-import { Accounts } from 'meteor/accounts-base';
-import { SHA256 } from '@rocket.chat/sha256';
-import type { ServerMethods } from '@rocket.chat/ui-contexts';
+import { Apps, AppEvents } from '@rocket.chat/apps';
+import type { ServerMethods } from '@rocket.chat/ddp-client';
 import { Users } from '@rocket.chat/models';
+import { SHA256 } from '@rocket.chat/sha256';
+import { Accounts } from 'meteor/accounts-base';
+import { check } from 'meteor/check';
+import { Meteor } from 'meteor/meteor';
 
-import { settings } from '../../../settings/server';
-import { deleteUser } from '../functions';
-import { AppEvents, Apps } from '../../../../ee/server/apps/orchestrator';
 import { trim } from '../../../../lib/utils/stringUtils';
+import { settings } from '../../../settings/server';
+import { deleteUser } from '../functions/deleteUser';
 
-declare module '@rocket.chat/ui-contexts' {
+declare module '@rocket.chat/ddp-client' {
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	interface ServerMethods {
 		deleteUserOwnAccount(password: string, confirmRelinquish?: boolean): Promise<boolean>;
@@ -48,7 +48,7 @@ Meteor.methods<ServerMethods>({
 		}
 
 		if (user.services?.password && trim(user.services.password.bcrypt)) {
-			const result = Accounts._checkPassword(user as Meteor.User, {
+			const result = await Accounts._checkPasswordAsync(user as Meteor.User, {
 				digest: password.toLowerCase(),
 				algorithm: 'sha-256',
 			});
@@ -66,7 +66,7 @@ Meteor.methods<ServerMethods>({
 		await deleteUser(uid, confirmRelinquish);
 
 		// App IPostUserDeleted event hook
-		await Apps.triggerEvent(AppEvents.IPostUserDeleted, { user });
+		await Apps.self?.triggerEvent(AppEvents.IPostUserDeleted, { user });
 
 		return true;
 	},

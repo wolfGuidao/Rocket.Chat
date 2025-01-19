@@ -1,11 +1,12 @@
-import { Meteor } from 'meteor/meteor';
-import { TAPi18n } from 'meteor/rocketchat:tap-i18n';
 import type { IUser } from '@rocket.chat/core-typings';
 import { Users } from '@rocket.chat/models';
+import { Meteor } from 'meteor/meteor';
 
-import { settings } from '../../../settings/server';
-import * as Mailer from '../../../mailer/server/api';
+import { i18n } from '../../../../server/lib/i18n';
 import { isUserIdFederated } from '../../../../server/lib/isUserIdFederated';
+import { notifyOnUserChange } from '../../../lib/server/lib/notifyListener';
+import * as Mailer from '../../../mailer/server/api';
+import { settings } from '../../../settings/server';
 
 const sendResetNotification = async function (uid: string): Promise<void> {
 	const user = await Users.findOneById<Pick<IUser, 'language' | 'emails'>>(uid, {
@@ -21,7 +22,7 @@ const sendResetNotification = async function (uid: string): Promise<void> {
 		return;
 	}
 
-	const t = (s: string): string => TAPi18n.__(s, { lng: language });
+	const t = i18n.getFixedT(language);
 	const text = `
 	${t('Your_TOTP_has_been_reset')}
 
@@ -68,6 +69,14 @@ export async function resetTOTP(userId: string, notifyUser = false): Promise<boo
 
 	if (result?.modifiedCount === 1) {
 		await Users.unsetLoginTokens(userId);
+
+		void notifyOnUserChange({
+			clientAction: 'updated',
+			id: userId,
+			diff: {
+				'services.resume.loginTokens': [],
+			},
+		});
 		return true;
 	}
 

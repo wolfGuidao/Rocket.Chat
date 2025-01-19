@@ -1,18 +1,17 @@
 import http from 'http';
 import https from 'https';
-import URL from 'url';
 
 import _ from 'underscore';
 
-import { FileUploadClass, FileUpload } from '../lib/FileUpload';
+import { forceDownload } from './helper';
 import { settings } from '../../../settings/server';
+import { FileUploadClass, FileUpload } from '../lib/FileUpload';
 import '../../ufs/GoogleStorage/server';
 
 const get: FileUploadClass['get'] = async function (this: FileUploadClass, file, req, res) {
-	const { query } = URL.parse(req.url || '', true);
-	const forceDownload = typeof query.download !== 'undefined';
+	const forcedDownload = forceDownload(req);
 
-	const fileUrl = await this.store.getRedirectURL(file, forceDownload);
+	const fileUrl = await this.store.getRedirectURL(file, forcedDownload);
 	if (!fileUrl || !file.store) {
 		res.end();
 		return;
@@ -22,7 +21,7 @@ const get: FileUploadClass['get'] = async function (this: FileUploadClass, file,
 	if (settings.get(`FileUpload_GoogleStorage_Proxy_${storeType}`)) {
 		const request = /^https:/.test(fileUrl) ? https : http;
 
-		FileUpload.proxyFile(file.name || '', fileUrl, forceDownload, request, req, res);
+		FileUpload.proxyFile(file.name || '', fileUrl, forcedDownload, request, req, res);
 		return;
 	}
 
@@ -32,12 +31,15 @@ const get: FileUploadClass['get'] = async function (this: FileUploadClass, file,
 const copy: FileUploadClass['copy'] = async function (this: FileUploadClass, file, out) {
 	const fileUrl = await this.store.getRedirectURL(file, false);
 
-	if (fileUrl) {
-		const request = /^https:/.test(fileUrl) ? https : http;
-		request.get(fileUrl, (fileRes) => fileRes.pipe(out));
-	} else {
+	if (!fileUrl) {
 		out.end();
+		return;
 	}
+
+	const request = /^https:/.test(fileUrl) ? https : http;
+	return new Promise((resolve) => {
+		request.get(fileUrl, (fileRes) => fileRes.pipe(out).on('finish', () => resolve()));
+	});
 };
 
 const GoogleCloudStorageUploads = new FileUploadClass({
@@ -61,7 +63,7 @@ const GoogleCloudStorageUserDataFiles = new FileUploadClass({
 	// store setted bellow
 });
 
-const configure = _.debounce(function () {
+const configure = _.debounce(() => {
 	const bucket = settings.get('FileUpload_GoogleStorage_Bucket');
 	const projectId = settings.get('FileUpload_GoogleStorage_ProjectId');
 	const accessId = settings.get('FileUpload_GoogleStorage_AccessId');
@@ -77,8 +79,8 @@ const configure = _.debounce(function () {
 			credentials: {
 				client_email: accessId,
 				private_key: secret,
-				projectId,
 			},
+			projectId,
 		},
 		bucket,
 		URLExpiryTimeSpan,

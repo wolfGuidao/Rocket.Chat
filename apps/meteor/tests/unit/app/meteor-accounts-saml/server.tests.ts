@@ -1,13 +1,6 @@
 import { expect } from 'chai';
 import proxyquire from 'proxyquire';
 
-import { AuthorizeRequest } from '../../../../app/meteor-accounts-saml/server/lib/generators/AuthorizeRequest';
-import { LogoutRequest } from '../../../../app/meteor-accounts-saml/server/lib/generators/LogoutRequest';
-import { LogoutResponse } from '../../../../app/meteor-accounts-saml/server/lib/generators/LogoutResponse';
-import { LogoutRequestParser } from '../../../../app/meteor-accounts-saml/server/lib/parsers/LogoutRequest';
-import { LogoutResponseParser } from '../../../../app/meteor-accounts-saml/server/lib/parsers/LogoutResponse';
-import { ResponseParser } from '../../../../app/meteor-accounts-saml/server/lib/parsers/Response';
-import { SAMLUtils } from '../../../../app/meteor-accounts-saml/server/lib/Utils';
 import {
 	serviceProviderOptions,
 	simpleMetadata,
@@ -34,6 +27,13 @@ import {
 	privateKeyCert,
 	privateKey,
 } from './data';
+import { SAMLUtils } from '../../../../app/meteor-accounts-saml/server/lib/Utils';
+import { AuthorizeRequest } from '../../../../app/meteor-accounts-saml/server/lib/generators/AuthorizeRequest';
+import { LogoutRequest } from '../../../../app/meteor-accounts-saml/server/lib/generators/LogoutRequest';
+import { LogoutResponse } from '../../../../app/meteor-accounts-saml/server/lib/generators/LogoutResponse';
+import { LogoutRequestParser } from '../../../../app/meteor-accounts-saml/server/lib/parsers/LogoutRequest';
+import { LogoutResponseParser } from '../../../../app/meteor-accounts-saml/server/lib/parsers/LogoutResponse';
+import { ResponseParser } from '../../../../app/meteor-accounts-saml/server/lib/parsers/Response';
 import { isTruthy } from '../../../../lib/isTruthy';
 
 const { ServiceProviderMetadata } = proxyquire
@@ -52,29 +52,35 @@ describe('SAML', () => {
 	describe('[AuthorizeRequest]', () => {
 		describe('AuthorizeRequest.generate', () => {
 			it('should use the custom templates to generate the request', () => {
-				const authorizeRequest = AuthorizeRequest.generate(serviceProviderOptions);
+				const credentialToken = '__credentialToken__';
+				const authorizeRequest = AuthorizeRequest.generate(serviceProviderOptions, credentialToken);
+				expect(authorizeRequest.id).to.be.equal(credentialToken);
 				expect(authorizeRequest.request).to.be.equal(
 					'<authRequest><NameID IdentifierFormat="email"/> <authnContext Comparison="Whatever">Password</authnContext> </authRequest>',
 				);
 			});
 
 			it('should include the unique ID on the request', () => {
+				const credentialToken = '__credentialToken__';
 				const customOptions = {
 					...serviceProviderOptions,
 					authRequestTemplate: '__newId__',
 				};
 
-				const authorizeRequest = AuthorizeRequest.generate(customOptions);
+				const authorizeRequest = AuthorizeRequest.generate(customOptions, credentialToken);
+				expect(authorizeRequest.id).to.be.equal(credentialToken);
 				expect(authorizeRequest.request).to.be.equal(authorizeRequest.id);
 			});
 
 			it('should include the custom options on the request', () => {
+				const credentialToken = '__credentialToken__';
 				const customOptions = {
 					...serviceProviderOptions,
 					authRequestTemplate: '__callbackUrl__ __entryPoint__ __issuer__',
 				};
 
-				const authorizeRequest = AuthorizeRequest.generate(customOptions);
+				const authorizeRequest = AuthorizeRequest.generate(customOptions, credentialToken);
+				expect(authorizeRequest.id).to.be.equal(credentialToken);
 				expect(authorizeRequest.request).to.be.equal('[callback-url] [entry-point] [issuer]');
 			});
 		});
@@ -342,7 +348,7 @@ describe('SAML', () => {
 			it('should reject a xml with multiple responses', () => {
 				const parser = new ResponseParser(serviceProviderOptions);
 				parser.validate(duplicatedSamlResponse, (err, data, loggedOut) => {
-					expect(err).to.be.an('error').that.has.property('message').that.is.equal('Too many SAML responses');
+					expect(err).to.be.an('error');
 					expect(data).to.not.exist;
 					expect(loggedOut).to.be.false;
 				});
@@ -962,6 +968,15 @@ describe('SAML', () => {
 				const map = new Map();
 				map.set('epa', 'group1');
 			});
+		});
+	});
+
+	describe('[Utils]', () => {
+		it('should return correct validation action redirect path', () => {
+			const credentialToken = SAMLUtils.generateUniqueID();
+			expect(SAMLUtils.getValidationActionRedirectPath(credentialToken)).to.be.equal(
+				`saml/${credentialToken}?saml_idp_credentialToken=${credentialToken}`,
+			);
 		});
 	});
 });

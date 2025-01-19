@@ -1,13 +1,14 @@
-import zlib from 'zlib';
 import { EventEmitter } from 'events';
+import zlib from 'zlib';
 
-import type { IServiceProviderOptions } from '../definition/IServiceProviderOptions';
-import type { ISAMLUser } from '../definition/ISAMLUser';
-import type { ISAMLGlobalSettings } from '../definition/ISAMLGlobalSettings';
-import type { IUserDataMap, IAttributeMapping } from '../definition/IAttributeMapping';
+import type { Logger } from '@rocket.chat/logger';
+
 import { StatusCode } from './constants';
-import type { Logger } from '../../../../server/lib/logger/Logger';
 import { ensureArray } from '../../../../lib/utils/arrayUtils';
+import type { IUserDataMap, IAttributeMapping } from '../definition/IAttributeMapping';
+import type { ISAMLGlobalSettings } from '../definition/ISAMLGlobalSettings';
+import type { ISAMLUser } from '../definition/ISAMLUser';
+import type { IServiceProviderOptions } from '../definition/IServiceProviderOptions';
 
 let providerList: Array<IServiceProviderOptions> = [];
 let debug = false;
@@ -128,6 +129,11 @@ export class SAMLUtils {
 		}
 
 		return newTemplate;
+	}
+
+	public static getValidationActionRedirectPath(credentialToken: string): string {
+		// the saml_idp_credentialToken param is needed by the mobile app
+		return `saml/${credentialToken}?saml_idp_credentialToken=${credentialToken}`;
 	}
 
 	public static log(obj: any, ...args: Array<any>): void {
@@ -391,7 +397,7 @@ export class SAMLUtils {
 		return mainValue;
 	}
 
-	public static convertArrayBufferToString(buffer: ArrayBuffer, encoding: BufferEncoding = 'utf8'): string {
+	public static convertArrayBufferToString(buffer: Buffer<ArrayBufferLike>, encoding: BufferEncoding = 'utf8'): string {
 		return Buffer.from(buffer).toString(encoding);
 	}
 

@@ -1,11 +1,10 @@
 import { AutoComplete, Option, Chip, Box, Skeleton } from '@rocket.chat/fuselage';
 import { useDebouncedValue } from '@rocket.chat/fuselage-hooks';
+import { RoomAvatar } from '@rocket.chat/ui-avatar';
 import { useEndpoint } from '@rocket.chat/ui-contexts';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { ReactElement, ComponentProps } from 'react';
-import React, { memo, useMemo, useState } from 'react';
-
-import RoomAvatar from '../avatar/RoomAvatar';
+import { memo, useMemo, useState } from 'react';
 
 const generateQuery = (
 	term = '',
@@ -22,8 +21,10 @@ const RoomAutoCompleteMultiple = ({ value, onChange, ...props }: RoomAutoComplet
 	const filterDebounced = useDebouncedValue(filter, 300);
 	const autocomplete = useEndpoint('GET', '/v1/rooms.autocomplete.channelAndPrivate');
 
-	const result = useQuery(['rooms.autocomplete.channelAndPrivate', filterDebounced], () => autocomplete(generateQuery(filterDebounced)), {
-		keepPreviousData: true,
+	const result = useQuery({
+		queryKey: ['rooms.autocomplete.channelAndPrivate', filterDebounced],
+		queryFn: () => autocomplete(generateQuery(filterDebounced)),
+		placeholderData: keepPreviousData,
 	});
 
 	const options = useMemo(
@@ -32,12 +33,12 @@ const RoomAutoCompleteMultiple = ({ value, onChange, ...props }: RoomAutoComplet
 				? result.data.items.map(({ fname, name, _id, avatarETag, t }) => ({
 						value: _id,
 						label: { name: fname || name, avatarETag, type: t },
-				  }))
+					}))
 				: [],
 		[result.data?.items, result.isSuccess],
 	);
 
-	if (result.isLoading) {
+	if (result.isPending) {
 		return <Skeleton />;
 	}
 
@@ -49,10 +50,10 @@ const RoomAutoCompleteMultiple = ({ value, onChange, ...props }: RoomAutoComplet
 			filter={filter}
 			setFilter={setFilter}
 			multiple
-			renderSelected={({ selected: { value, label }, onRemove }): ReactElement => (
-				<Chip key={value} {...props} height='x20' value={value} onClick={onRemove} mie='x4' mbe='x4'>
+			renderSelected={({ selected: { value, label }, onRemove, ...props }): ReactElement => (
+				<Chip {...props} key={value} value={value} onClick={onRemove}>
 					<RoomAvatar size='x20' room={{ type: label?.type || 'c', _id: value, ...label }} />
-					<Box is='span' margin='none' mis='x4'>
+					<Box is='span' margin='none' mis={4}>
 						{label?.name}
 					</Box>
 				</Chip>

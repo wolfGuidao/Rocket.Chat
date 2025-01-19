@@ -1,39 +1,49 @@
-import type { IEditedMessage, IMessage, IUser } from '@rocket.chat/core-typings';
-import { Meteor } from 'meteor/meteor';
+import { AppEvents, Apps } from '@rocket.chat/apps';
+import { Message } from '@rocket.chat/core-services';
+import type { IMessage, IUser, AtLeast } from '@rocket.chat/core-typings';
 import { Messages, Rooms } from '@rocket.chat/models';
+import { Meteor } from 'meteor/meteor';
 
-import { settings } from '../../../settings/server';
-import { callbacks } from '../../../../lib/callbacks';
-import { Apps } from '../../../../ee/server/apps';
 import { parseUrlsInMessage } from './parseUrlsInMessage';
+import { settings } from '../../../settings/server';
+import { afterSaveMessage } from '../lib/afterSaveMessage';
+import { notifyOnRoomChangedById, notifyOnMessageChange } from '../lib/notifyListener';
+import { validateCustomMessageFields } from '../lib/validateCustomMessageFields';
 
-export const updateMessage = async function (message: IMessage, user: IUser, originalMsg?: IMessage): Promise<void> {
+export const updateMessage = async function (
+	message: AtLeast<IMessage, '_id' | 'rid' | 'msg' | 'customFields'>,
+	user: IUser,
+	originalMsg?: IMessage,
+	previewUrls?: string[],
+): Promise<void> {
 	const originalMessage = originalMsg || (await Messages.findOneById(message._id));
+	if (!originalMessage) {
+		throw new Error('Invalid message ID.');
+	}
+
+	let messageData: IMessage = Object.assign({}, originalMessage, message);
 
 	// For the Rocket.Chat Apps :)
-	if (message && Apps && Apps.isLoaded()) {
-		const appMessage = Object.assign({}, originalMessage, message);
-
-		const prevent = await Apps.getBridges()?.getListenerBridge().messageEvent('IPreMessageUpdatedPrevent', appMessage);
+	if (message && Apps.self && Apps.isLoaded()) {
+		const prevent = await Apps.getBridges().getListenerBridge().messageEvent(AppEvents.IPreMessageUpdatedPrevent, messageData);
 		if (prevent) {
 			throw new Meteor.Error('error-app-prevented-updating', 'A Rocket.Chat App prevented the message updating.');
 		}
 
-		let result;
-		result = await Apps.getBridges()?.getListenerBridge().messageEvent('IPreMessageUpdatedExtend', appMessage);
-		result = await Apps.getBridges()?.getListenerBridge().messageEvent('IPreMessageUpdatedModify', result);
+		let result = await Apps.getBridges().getListenerBridge().messageEvent(AppEvents.IPreMessageUpdatedExtend, messageData);
+		result = await Apps.getBridges().getListenerBridge().messageEvent(AppEvents.IPreMessageUpdatedModify, result);
 
 		if (typeof result === 'object') {
-			message = Object.assign(appMessage, result);
+			Object.assign(messageData, result);
 		}
 	}
 
 	// If we keep history of edits, insert a new message to store history information
 	if (settings.get('Message_KeepHistory')) {
-		await Messages.cloneAndSaveAsHistoryById(message._id, user as Required<Pick<IUser, '_id' | 'username' | 'name'>>);
+		await Messages.cloneAndSaveAsHistoryById(messageData._id, user as Required<Pick<IUser, '_id' | 'username' | 'name'>>);
 	}
 
-	Object.assign<IMessage, Omit<IEditedMessage, keyof IMessage>>(message, {
+	Object.assign(messageData, {
 		editedAt: new Date(),
 		editedBy: {
 			_id: user._id,
@@ -41,11 +51,24 @@ export const updateMessage = async function (message: IMessage, user: IUser, ori
 		},
 	});
 
-	parseUrlsInMessage(message);
+	parseUrlsInMessage(messageData, previewUrls);
 
-	message = callbacks.run('beforeSaveMessage', message);
+	const room = await Rooms.findOneById(messageData.rid);
+	if (!room) {
+		return;
+	}
 
-	const { _id, ...editedMessage } = message;
+	messageData = await Message.beforeSave({ message: messageData, room, user });
+
+	if (messageData.customFields) {
+		validateCustomMessageFields({
+			customFields: messageData.customFields,
+			messageCustomFieldsEnabled: settings.get<boolean>('Message_CustomFields_Enabled'),
+			messageCustomFields: settings.get<string>('Message_CustomFields'),
+		});
+	}
+
+	const { _id, ...editedMessage } = messageData;
 
 	if (!editedMessage.msg) {
 		delete editedMessage.md;
@@ -62,22 +85,29 @@ export const updateMessage = async function (message: IMessage, user: IUser, ori
 		},
 	);
 
-	const room = await Rooms.findOneById(message.rid);
-
-	if (!room) {
-		return;
-	}
-
-	if (Apps?.isLoaded()) {
+	if (Apps.self?.isLoaded()) {
 		// This returns a promise, but it won't mutate anything about the message
 		// so, we don't really care if it is successful or fails
-		void Apps.getBridges()?.getListenerBridge().messageEvent('IPostMessageUpdated', message);
+		void Apps.getBridges()?.getListenerBridge().messageEvent(AppEvents.IPostMessageUpdated, messageData);
 	}
 
-	Meteor.defer(async function () {
+	setImmediate(async () => {
 		const msg = await Messages.findOneById(_id);
-		if (msg) {
-			callbacks.run('afterSaveMessage', msg, room, user._id);
+		if (!msg) {
+			return;
+		}
+
+		// although this is an "afterSave" kind callback, we know they can extend message's properties
+		// so we wait for it to run before broadcasting
+		const data = await afterSaveMessage(msg, room, user._id);
+
+		void notifyOnMessageChange({
+			id: msg._id,
+			data,
+		});
+
+		if (room?.lastMessage?._id === msg._id) {
+			void notifyOnRoomChangedById(message.rid);
 		}
 	});
 };

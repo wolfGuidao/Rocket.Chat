@@ -1,12 +1,65 @@
-import { Meteor } from 'meteor/meteor';
-import type { IUser } from '@rocket.chat/core-typings';
 import { api } from '@rocket.chat/core-services';
+import type { IUser } from '@rocket.chat/core-typings';
+import type { Updater } from '@rocket.chat/models';
 import { Users } from '@rocket.chat/models';
+import type { Response } from '@rocket.chat/server-fetch';
+import { serverFetch as fetch } from '@rocket.chat/server-fetch';
+import { Meteor } from 'meteor/meteor';
 
+import { checkUrlForSsrf } from './checkUrlForSsrf';
+import { SystemLogger } from '../../../../server/lib/logger/system';
+import { hasPermissionAsync } from '../../../authorization/server/functions/hasPermission';
 import { RocketChatFile } from '../../../file/server';
 import { FileUpload } from '../../../file-upload/server';
-import { SystemLogger } from '../../../../server/lib/logger/system';
-import { fetch } from '../../../../server/lib/http/fetch';
+import { settings } from '../../../settings/server';
+
+export const setAvatarFromServiceWithValidation = async (
+	userId: string,
+	dataURI: string,
+	contentType?: string,
+	service?: string,
+	targetUserId?: string,
+): Promise<void> => {
+	if (!dataURI) {
+		throw new Meteor.Error('error-invalid-data', 'Invalid dataURI', {
+			method: 'setAvatarFromService',
+		});
+	}
+
+	if (!userId) {
+		throw new Meteor.Error('error-invalid-user', 'Invalid user', {
+			method: 'setAvatarFromService',
+		});
+	}
+
+	if (!settings.get('Accounts_AllowUserAvatarChange')) {
+		throw new Meteor.Error('error-not-allowed', 'Not allowed', {
+			method: 'setAvatarFromService',
+		});
+	}
+
+	let user: IUser | null;
+
+	if (targetUserId && targetUserId !== userId) {
+		if (!(await hasPermissionAsync(userId, 'edit-other-user-avatar'))) {
+			throw new Meteor.Error('error-unauthorized', 'Unauthorized', {
+				method: 'setAvatarFromService',
+			});
+		}
+
+		user = await Users.findOneById(targetUserId, { projection: { _id: 1, username: 1 } });
+	} else {
+		user = await Users.findOneById(userId, { projection: { _id: 1, username: 1 } });
+	}
+
+	if (!user) {
+		throw new Meteor.Error('error-invalid-desired-user', 'Invalid desired user', {
+			method: 'setAvatarFromService',
+		});
+	}
+
+	return setUserAvatar(user, dataURI, contentType, service);
+};
 
 export function setUserAvatar(
 	user: Pick<IUser, '_id' | 'username'>,
@@ -14,6 +67,7 @@ export function setUserAvatar(
 	contentType: string,
 	service: 'rest',
 	etag?: string,
+	updater?: Updater<IUser>,
 ): Promise<void>;
 export function setUserAvatar(
 	user: Pick<IUser, '_id' | 'username'>,
@@ -21,6 +75,7 @@ export function setUserAvatar(
 	contentType?: string,
 	service?: 'initials' | 'url' | 'rest' | string,
 	etag?: string,
+	updater?: Updater<IUser>,
 ): Promise<void>;
 export async function setUserAvatar(
 	user: Pick<IUser, '_id' | 'username'>,
@@ -28,17 +83,31 @@ export async function setUserAvatar(
 	contentType: string | undefined,
 	service?: 'initials' | 'url' | 'rest' | string,
 	etag?: string,
+	updater?: Updater<IUser>,
 ): Promise<void> {
 	if (service === 'initials') {
-		await Users.setAvatarData(user._id, service, null);
+		if (updater) {
+			updater.set('avatarOrigin', origin);
+		} else {
+			await Users.setAvatarData(user._id, service, null);
+		}
 		return;
 	}
 
 	const { buffer, type } = await (async (): Promise<{ buffer: Buffer; type: string }> => {
 		if (service === 'url' && typeof dataURI === 'string') {
 			let response: Response;
+
+			const isSsrfSafe = await checkUrlForSsrf(dataURI);
+			if (!isSsrfSafe) {
+				throw new Meteor.Error('error-avatar-invalid-url', `Invalid avatar URL: ${encodeURI(dataURI)}`, {
+					function: 'setUserAvatar',
+					url: dataURI,
+				});
+			}
+
 			try {
-				response = await fetch(dataURI);
+				response = await fetch(dataURI, { redirect: 'error' });
 			} catch (e) {
 				SystemLogger.info(`Not a valid response, from the avatar url: ${encodeURI(dataURI)}`);
 				throw new Meteor.Error('error-avatar-invalid-url', `Invalid avatar URL: ${encodeURI(dataURI)}`, {
@@ -88,7 +157,7 @@ export async function setUserAvatar(
 			}
 
 			return {
-				buffer: dataURI instanceof Buffer ? dataURI : Buffer.from(dataURI, 'binary'),
+				buffer: typeof dataURI === 'string' ? Buffer.from(dataURI, 'binary') : dataURI,
 				type: contentType,
 			};
 		}
@@ -114,9 +183,15 @@ export async function setUserAvatar(
 
 	const avatarETag = etag || result?.etag || '';
 
-	Meteor.setTimeout(async function () {
+	setTimeout(async () => {
 		if (service) {
-			await Users.setAvatarData(user._id, service, avatarETag);
+			if (updater) {
+				updater.set('avatarOrigin', origin);
+				updater.set('avatarETag', avatarETag);
+			} else {
+				await Users.setAvatarData(user._id, service, avatarETag);
+			}
+
 			void api.broadcast('user.avatarUpdate', {
 				username: user.username,
 				avatarETag,

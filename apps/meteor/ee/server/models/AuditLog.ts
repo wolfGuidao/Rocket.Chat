@@ -1,7 +1,7 @@
 import { registerModel } from '@rocket.chat/models';
 
-import { db } from '../../../server/database/utils';
-import { trashCollection } from '../../../server/database/trash';
 import { AuditLogRaw } from './raw/AuditLog';
+import { trashCollection } from '../../../server/database/trash';
+import { db } from '../../../server/database/utils';
 
-registerModel('IAuditModel', new AuditLogRaw(db, trashCollection));
+registerModel('IAuditLogModel', new AuditLogRaw(db, trashCollection));

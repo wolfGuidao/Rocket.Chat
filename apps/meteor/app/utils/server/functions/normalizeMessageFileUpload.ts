@@ -1,8 +1,8 @@
-import { Uploads } from '@rocket.chat/models';
 import type { IMessage } from '@rocket.chat/core-typings';
+import { Uploads } from '@rocket.chat/models';
 
-import { getURL } from '../../lib/getURL';
 import { FileUpload } from '../../../file-upload/server';
+import { getURL } from '../getURL';
 
 export const normalizeMessageFileUpload = async (message: Omit<IMessage, '_updatedAt'>): Promise<Omit<IMessage, '_updatedAt'>> => {
 	if (message.file && !message.fileUpload) {
@@ -20,7 +20,7 @@ export const normalizeMessageFileUpload = async (message: Omit<IMessage, '_updat
 				? getURL(`${FileUpload.getPath(`${file._id}/${encodeURI(file.name)}`).substring(1)}${jwt ? `?token=${jwt}` : ''}`, {
 						cdn: false,
 						full: true,
-				  })
+					})
 				: '',
 			type: file.type,
 			size: file.size,

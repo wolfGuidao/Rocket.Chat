@@ -1,10 +1,9 @@
-import type { Collection, Db } from 'mongodb';
 import type { RocketChatRecordDeleted, IAuditLog } from '@rocket.chat/core-typings';
-
-import { BaseRaw } from '../../../../server/models/raw/BaseRaw';
+import { BaseRaw } from '@rocket.chat/models';
+import type { Collection, Db } from 'mongodb';
 
 export class AuditLogRaw extends BaseRaw<IAuditLog> {
 	constructor(db: Db, trash?: Collection<RocketChatRecordDeleted<IAuditLog>>) {
-		super(db, 'read_receipts', trash);
+		super(db, 'audit_log', trash);
 	}
 }

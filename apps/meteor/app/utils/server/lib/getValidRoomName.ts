@@ -1,16 +1,12 @@
-import { Meteor } from 'meteor/meteor';
-import limax from 'limax';
-import { escapeHTML } from '@rocket.chat/string-helpers';
 import { Rooms } from '@rocket.chat/models';
+import { escapeHTML } from '@rocket.chat/string-helpers';
+import limax from 'limax';
+import { Meteor } from 'meteor/meteor';
 
-import { settings } from '../../../settings/server';
 import { validateName } from '../../../lib/server/functions/validateName';
+import { settings } from '../../../settings/server';
 
-export const getValidRoomName = async (
-	displayName: string,
-	rid = '',
-	options: { allowDuplicates?: boolean; nameValidationRegex?: string } = {},
-) => {
+export const getValidRoomName = async (displayName: string, rid = '', options: { allowDuplicates?: boolean } = {}) => {
 	let slugifiedName = displayName;
 
 	if (settings.get('UI_Allow_room_names_with_special_chars')) {
@@ -36,14 +32,10 @@ export const getValidRoomName = async (
 
 	let nameValidation;
 
-	if (options.nameValidationRegex) {
-		nameValidation = new RegExp(options.nameValidationRegex);
-	} else {
-		try {
-			nameValidation = new RegExp(`^${settings.get('UTF8_Channel_Names_Validation')}$`);
-		} catch (error) {
-			nameValidation = new RegExp('^[0-9a-zA-Z-_.]+$');
-		}
+	try {
+		nameValidation = new RegExp(`^${settings.get('UTF8_Channel_Names_Validation')}$`);
+	} catch (error) {
+		nameValidation = new RegExp('^[0-9a-zA-Z-_.]+$');
 	}
 
 	if (!nameValidation.test(slugifiedName) || !validateName(slugifiedName)) {

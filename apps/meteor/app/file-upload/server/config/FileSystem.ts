@@ -1,13 +1,10 @@
-import fs from 'fs';
+import fsp from 'fs/promises';
 
-import { Meteor } from 'meteor/meteor';
-
+import { getContentDisposition } from './helper';
 import { UploadFS } from '../../../../server/ufs';
 import { settings } from '../../../settings/server';
 import { FileUploadClass, FileUpload } from '../lib/FileUpload';
 import { getFileRange, setRangeHeaders } from '../lib/ranges';
-
-const statSync = Meteor.wrapAsync(fs.stat);
 
 const FileSystemUploads = new FileUploadClass({
 	name: 'FileSystem:Uploads',
@@ -22,7 +19,7 @@ const FileSystemUploads = new FileUploadClass({
 		const options: { start?: number; end?: number } = {};
 
 		try {
-			const stat = statSync(filePath);
+			const stat = await fsp.stat(filePath);
 			if (!stat?.isFile()) {
 				res.writeHead(404);
 				res.end();
@@ -30,7 +27,8 @@ const FileSystemUploads = new FileUploadClass({
 			}
 
 			file = FileUpload.addExtensionTo(file);
-			res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(file.name || '')}`);
+
+			res.setHeader('Content-Disposition', `${getContentDisposition(req)}; filename*=UTF-8''${encodeURIComponent(file.name || '')}`);
 			file.uploadedAt && res.setHeader('Last-Modified', file.uploadedAt.toUTCString());
 			res.setHeader('Content-Type', file.type || 'application/octet-stream');
 
@@ -65,7 +63,7 @@ const FileSystemUploads = new FileUploadClass({
 		}
 		const filePath = await this.store.getFilePath(file._id, file);
 		try {
-			const stat = statSync(filePath);
+			const stat = await fsp.stat(filePath);
 
 			if (stat?.isFile()) {
 				file = FileUpload.addExtensionTo(file);
@@ -89,7 +87,7 @@ const FileSystemAvatars = new FileUploadClass({
 		const filePath = await this.store.getFilePath(file._id, file);
 
 		try {
-			const stat = statSync(filePath);
+			const stat = await fsp.stat(filePath);
 
 			if (stat?.isFile()) {
 				file = FileUpload.addExtensionTo(file);
@@ -113,7 +111,7 @@ const FileSystemUserDataFiles = new FileUploadClass({
 		const filePath = await this.store.getFilePath(file._id, file);
 
 		try {
-			const stat = statSync(filePath);
+			const stat = await fsp.stat(filePath);
 
 			if (stat?.isFile()) {
 				file = FileUpload.addExtensionTo(file);
@@ -131,7 +129,7 @@ const FileSystemUserDataFiles = new FileUploadClass({
 	},
 });
 
-settings.watch('FileUpload_FileSystemPath', function () {
+settings.watch('FileUpload_FileSystemPath', () => {
 	const options = {
 		path: settings.get('FileUpload_FileSystemPath'), // '/tmp/uploads/photos',
 	};

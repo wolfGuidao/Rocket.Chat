@@ -1,42 +1,72 @@
-import { isOmnichannelRoom, isEditedMessage } from '@rocket.chat/core-typings';
-import { LivechatRooms } from '@rocket.chat/models';
+import type { IOmnichannelRoom, IMessage } from '@rocket.chat/core-typings';
+import { isEditedMessage, isMessageFromVisitor, isSystemMessage } from '@rocket.chat/core-typings';
+import type { Updater } from '@rocket.chat/models';
+import { LivechatRooms, LivechatVisitors, LivechatInquiry } from '@rocket.chat/models';
+import moment from 'moment';
 
 import { callbacks } from '../../../../lib/callbacks';
+import { notifyOnLivechatInquiryChanged } from '../../../lib/server/lib/notifyListener';
+
+export async function markRoomResponded(
+	message: IMessage,
+	room: IOmnichannelRoom,
+	roomUpdater: Updater<IOmnichannelRoom>,
+): Promise<IOmnichannelRoom['responseBy'] | undefined> {
+	if (isSystemMessage(message) || isEditedMessage(message) || isMessageFromVisitor(message)) {
+		return;
+	}
+
+	const monthYear = moment().format('YYYY-MM');
+	const isVisitorActive = await LivechatVisitors.isVisitorActiveOnPeriod(room.v._id, monthYear);
+
+	// Case: agent answers & visitor is not active, we mark visitor as active
+	if (!isVisitorActive) {
+		await LivechatVisitors.markVisitorActiveForPeriod(room.v._id, monthYear);
+	}
+
+	if (!room.v?.activity?.includes(monthYear)) {
+		LivechatRooms.getVisitorActiveForPeriodUpdateQuery(monthYear, roomUpdater);
+		const livechatInquiry = await LivechatInquiry.markInquiryActiveForPeriod(room._id, monthYear);
+
+		if (livechatInquiry) {
+			void notifyOnLivechatInquiryChanged(livechatInquiry, 'updated', { v: livechatInquiry.v });
+		}
+	}
+
+	if (!room.waitingResponse) {
+		// case where agent sends second message or any subsequent message in a room before visitor responds to the first message
+		// in this case, we just need to update the lastMessageTs of the responseBy object
+		if (room.responseBy) {
+			LivechatRooms.getAgentLastMessageTsUpdateQuery(roomUpdater);
+		}
+
+		return room.responseBy;
+	}
+
+	// Since we're updating the whole object anyways, we re-use the same values from object (or from message if not present)
+	// And then we update the lastMessageTs, which is the only thing that should be updating here
+	const { responseBy: { _id, username, firstResponseTs } = {} } = room;
+	const responseBy: IOmnichannelRoom['responseBy'] = {
+		_id: _id || message.u._id,
+		username: username || message.u.username,
+		firstResponseTs: firstResponseTs || new Date(message.ts),
+		lastMessageTs: new Date(message.ts),
+	};
+
+	LivechatRooms.getResponseByRoomIdUpdateQuery(responseBy, roomUpdater);
+
+	return responseBy;
+}
 
 callbacks.add(
-	'afterSaveMessage',
-	async function (message, room) {
-		if (!isOmnichannelRoom(room)) {
-			return message;
+	'afterOmnichannelSaveMessage',
+	async (message, { room, roomUpdater }) => {
+		if (!message || isEditedMessage(message) || isMessageFromVisitor(message) || isSystemMessage(message)) {
+			return;
 		}
 
-		// skips this callback if the message was edited
-		if (!message || isEditedMessage(message)) {
-			return message;
-		}
-
-		// if the message has a token, it was sent by the visitor, so ignore it
-		if (message.token) {
-			return message;
-		}
-		if (room.responseBy) {
-			await LivechatRooms.setAgentLastMessageTs(room._id);
-		}
-
-		// check if room is yet awaiting for response
-		if (!(typeof room.t !== 'undefined' && room.t === 'l' && room.waitingResponse)) {
-			return message;
-		}
-
-		await LivechatRooms.setResponseByRoomId(room._id, {
-			user: {
-				_id: message.u._id,
-				username: message.u.username,
-			},
-		});
-
-		return message;
+		await markRoomResponded(message, room, roomUpdater);
 	},
-	callbacks.priority.LOW,
+	callbacks.priority.HIGH,
 	'markRoomResponded',
 );

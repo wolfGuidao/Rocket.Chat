@@ -4,10 +4,10 @@ import { Meteor } from 'meteor/meteor';
 import type { Mongo } from 'meteor/mongo';
 
 import { hasAtLeastOnePermission } from '../../../../app/authorization/client';
-import { ChatRoom } from '../../../../app/models/client';
+import { Rooms } from '../../../../app/models/client';
 import { settings } from '../../../../app/settings/client';
 import { getUserPreference } from '../../../../app/utils/client';
-import { getAvatarURL } from '../../../../app/utils/lib/getAvatarURL';
+import { getRoomAvatarURL } from '../../../../app/utils/client/getRoomAvatarURL';
 import type { IRoomTypeClientDirectives } from '../../../../definition/IRoomTypeConfig';
 import { RoomSettingsEnum, RoomMemberActions, UiTextContext } from '../../../../definition/IRoomTypeConfig';
 import { getPublicRoomType } from '../../../../lib/rooms/roomTypes/public';
@@ -87,7 +87,7 @@ roomCoordinator.add(
 		},
 
 		getAvatarPath(room) {
-			return getAvatarURL({ roomId: room._id, cache: room.avatarETag }) as string;
+			return getRoomAvatarURL({ roomId: room._id, cache: room.avatarETag });
 		},
 
 		getIcon(room) {
@@ -105,7 +105,7 @@ roomCoordinator.add(
 		},
 
 		extractOpenRoomParams({ name }) {
-			return { type: 'c', ref: name };
+			return { type: 'c', reference: name };
 		},
 
 		findRoom(identifier) {
@@ -114,11 +114,11 @@ roomCoordinator.add(
 				name: identifier,
 			};
 
-			return ChatRoom.findOne(query);
+			return Rooms.findOne(query);
 		},
 
 		showJoinLink(roomId) {
-			return !!ChatRoom.findOne({ _id: roomId, t: 'c' });
+			return !!Rooms.findOne({ _id: roomId, t: 'c' });
 		},
 	} as AtLeast<IRoomTypeClientDirectives, 'isGroupChat' | 'roomName'>,
 );

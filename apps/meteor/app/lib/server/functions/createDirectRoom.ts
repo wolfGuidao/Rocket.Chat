@@ -1,16 +1,17 @@
+import { AppEvents, Apps } from '@rocket.chat/apps';
 import { AppsEngineException } from '@rocket.chat/apps-engine/definition/exceptions';
-import { Meteor } from 'meteor/meteor';
-import { Random } from '@rocket.chat/random';
-import type { ICreatedRoom, ISubscription, IUser } from '@rocket.chat/core-typings';
-import { Subscriptions, Users, Rooms } from '@rocket.chat/models';
-import type { MatchKeysAndValues } from 'mongodb';
 import type { ISubscriptionExtraData } from '@rocket.chat/core-services';
+import type { ICreatedRoom, IRoom, ISubscription, IUser } from '@rocket.chat/core-typings';
+import { Rooms, Subscriptions, Users } from '@rocket.chat/models';
+import { Random } from '@rocket.chat/random';
+import { Meteor } from 'meteor/meteor';
+import type { MatchKeysAndValues } from 'mongodb';
 
-import { Apps } from '../../../../ee/server/apps';
 import { callbacks } from '../../../../lib/callbacks';
-import { settings } from '../../../settings/server';
-import { getDefaultSubscriptionPref } from '../../../utils/server';
 import { isTruthy } from '../../../../lib/isTruthy';
+import { settings } from '../../../settings/server';
+import { getDefaultSubscriptionPref } from '../../../utils/lib/getDefaultSubscriptionPref';
+import { notifyOnRoomChangedById, notifyOnSubscriptionChangedByRoomIdAndUserId } from '../lib/notifyListener';
 
 const generateSubscription = (
 	fname: string,
@@ -19,6 +20,7 @@ const generateSubscription = (
 	extra: MatchKeysAndValues<ISubscription>,
 ): MatchKeysAndValues<ISubscription> => ({
 	_id: Random.id(),
+	ts: new Date(),
 	alert: false,
 	unread: 0,
 	userMentions: 0,
@@ -42,15 +44,22 @@ export async function createDirectRoom(
 	members: IUser[] | string[],
 	roomExtraData = {},
 	options: {
-		nameValidationRegex?: string;
 		creator?: string;
 		subscriptionExtra?: ISubscriptionExtraData;
 	},
 ): Promise<ICreatedRoom> {
-	if (members.length > (settings.get<number>('DirectMesssage_maxUsers') || 1)) {
-		throw new Error('error-direct-message-max-user-exceeded');
+	const maxUsers = settings.get<number>('DirectMesssage_maxUsers') || 1;
+	if (members.length > maxUsers) {
+		throw new Meteor.Error(
+			'error-direct-message-max-user-exceeded',
+			`You cannot add more than ${maxUsers} users, including yourself to a direct message`,
+			{
+				method: 'createDirectRoom',
+			},
+		);
 	}
-	callbacks.run('beforeCreateDirectRoom', members);
+
+	await callbacks.run('beforeCreateDirectRoom', members);
 
 	const membersUsernames: string[] = members
 		.map((member) => {
@@ -71,7 +80,7 @@ export async function createDirectRoom(
 	const uids = roomMembers.map(({ _id }) => _id).sort();
 
 	// Deprecated: using users' _id to compose the room _id is deprecated
-	const room =
+	const room: IRoom | null =
 		uids.length === 2
 			? await Rooms.findOneById(uids.join(''), { projection: { _id: 1 } })
 			: await Rooms.findOneDirectRoomContainingAllUserIDs(uids, { projection: { _id: 1 } });
@@ -95,7 +104,7 @@ export async function createDirectRoom(
 			_USERNAMES: usernames,
 		};
 
-		const prevent = await Apps.triggerEvent('IPreRoomCreatePrevent', tmpRoom).catch((error) => {
+		const prevent = await Apps.self?.triggerEvent(AppEvents.IPreRoomCreatePrevent, tmpRoom).catch((error) => {
 			if (error.name === AppsEngineException.name) {
 				throw new Meteor.Error('error-app-prevented', error.message);
 			}
@@ -107,7 +116,10 @@ export async function createDirectRoom(
 			throw new Meteor.Error('error-app-prevented', 'A Rocket.Chat App prevented the room creation.');
 		}
 
-		const result = await Apps.triggerEvent('IPreRoomCreateModify', await Apps.triggerEvent('IPreRoomCreateExtend', tmpRoom));
+		const result = await Apps.self?.triggerEvent(
+			AppEvents.IPreRoomCreateModify,
+			await Apps.self?.triggerEvent(AppEvents.IPreRoomCreateExtend, tmpRoom),
+		);
 
 		if (typeof result === 'object') {
 			Object.assign(roomInfo, result);
@@ -119,9 +131,11 @@ export async function createDirectRoom(
 	// @ts-expect-error - TODO: room expects `u` to be passed, but it's not part of the original object in here
 	const rid = room?._id || (await Rooms.insertOne(roomInfo)).insertedId;
 
+	void notifyOnRoomChangedById(rid, isNewRoom ? 'inserted' : 'updated');
+
 	if (roomMembers.length === 1) {
 		// dm to yourself
-		await Subscriptions.updateOne(
+		const { modifiedCount, upsertedCount } = await Subscriptions.updateOne(
 			{ rid, 'u._id': roomMembers[0]._id },
 			{
 				$set: { open: true },
@@ -132,6 +146,9 @@ export async function createDirectRoom(
 			},
 			{ upsert: true },
 		);
+		if (modifiedCount || upsertedCount) {
+			void notifyOnSubscriptionChangedByRoomIdAndUserId(rid, roomMembers[0]._id, modifiedCount ? 'updated' : 'inserted');
+		}
 	} else {
 		const memberIds = roomMembers.map((member) => member._id);
 		const membersWithPreferences: IUser[] = await Users.find(
@@ -141,7 +158,7 @@ export async function createDirectRoom(
 
 		for await (const member of membersWithPreferences) {
 			const otherMembers = sortedMembers.filter(({ _id }) => _id !== member._id);
-			await Subscriptions.updateOne(
+			const { modifiedCount, upsertedCount } = await Subscriptions.updateOne(
 				{ rid, 'u._id': member._id },
 				{
 					...(options?.creator === member._id && { $set: { open: true } }),
@@ -152,6 +169,9 @@ export async function createDirectRoom(
 				},
 				{ upsert: true },
 			);
+			if (modifiedCount || upsertedCount) {
+				void notifyOnSubscriptionChangedByRoomIdAndUserId(rid, member._id, modifiedCount ? 'updated' : 'inserted');
+			}
 		}
 	}
 
@@ -159,9 +179,9 @@ export async function createDirectRoom(
 	if (isNewRoom) {
 		const insertedRoom = await Rooms.findOneById(rid);
 
-		callbacks.run('afterCreateDirectRoom', insertedRoom, { members: roomMembers, creatorId: options?.creator });
+		await callbacks.run('afterCreateDirectRoom', insertedRoom, { members: roomMembers, creatorId: options?.creator });
 
-		void Apps.triggerEvent('IPostRoomCreate', insertedRoom);
+		void Apps.self?.triggerEvent(AppEvents.IPostRoomCreate, insertedRoom);
 	}
 
 	return {

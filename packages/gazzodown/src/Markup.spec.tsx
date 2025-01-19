@@ -1,31 +1,40 @@
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { Suspense } from 'react';
 
-import '@testing-library/jest-dom';
 import { MarkupInteractionContext } from '.';
 import Markup from './Markup';
 
-afterEach(cleanup);
+jest.mock('highlight.js', () => ({
+	highlightElement: (): void => undefined,
+}));
 
 it('renders empty', () => {
-	const { container } = render(<Markup tokens={[]} />);
+	const { container } = render(<Markup tokens={[]} />, { legacyRoot: true });
 	expect(container).toBeEmptyDOMElement();
 });
 
 it('renders a big emoji block', () => {
 	render(
-		<Markup
-			tokens={[
-				{
-					type: 'BIG_EMOJI',
-					value: [
-						{ type: 'EMOJI', value: { type: 'PLAIN_TEXT', value: 'smile' }, shortCode: 'smile' },
-						{ type: 'EMOJI', value: undefined, unicode: '😀' },
-						{ type: 'EMOJI', value: { type: 'PLAIN_TEXT', value: 'smile' }, shortCode: 'smile' },
-					],
-				},
-			]}
-		/>,
+		<MarkupInteractionContext.Provider
+			value={{
+				convertAsciiToEmoji: true,
+				useEmoji: true,
+			}}
+		>
+			<Markup
+				tokens={[
+					{
+						type: 'BIG_EMOJI',
+						value: [
+							{ type: 'EMOJI', value: { type: 'PLAIN_TEXT', value: 'smile' }, shortCode: 'smile' },
+							{ type: 'EMOJI', value: undefined, unicode: '😀' },
+							{ type: 'EMOJI', value: { type: 'PLAIN_TEXT', value: 'smile' }, shortCode: 'smile' },
+						],
+					},
+				]}
+			/>
+		</MarkupInteractionContext.Provider>,
+		{ legacyRoot: true },
 	);
 
 	expect(screen.getByRole('presentation')).toHaveTextContent(':smile:😀:smile:');
@@ -38,6 +47,7 @@ it('renders a big emoji block with ASCII emoji', () => {
 		<MarkupInteractionContext.Provider
 			value={{
 				convertAsciiToEmoji: false,
+				useEmoji: true,
 			}}
 		>
 			<Markup
@@ -53,6 +63,7 @@ it('renders a big emoji block with ASCII emoji', () => {
 				]}
 			/>
 		</MarkupInteractionContext.Provider>,
+		{ legacyRoot: true },
 	);
 
 	expect(screen.getByRole('presentation')).toHaveTextContent(':slight_smile:🙂:)');
@@ -70,6 +81,7 @@ it('renders a paragraph', () => {
 				},
 			]}
 		/>,
+		{ legacyRoot: true },
 	);
 
 	expect(screen.getByText('Hello')).toBeInTheDocument();
@@ -86,6 +98,7 @@ it('renders a heading', () => {
 				},
 			]}
 		/>,
+		{ legacyRoot: true },
 	);
 
 	expect(screen.getByRole('heading', { name: 'Hello' })).toBeInTheDocument();
@@ -105,6 +118,7 @@ it('renders a unordered list', () => {
 				},
 			]}
 		/>,
+		{ legacyRoot: true },
 	);
 
 	expect(screen.getByRole('list')).toBeInTheDocument();
@@ -131,6 +145,7 @@ it('renders an ordered list', () => {
 				},
 			]}
 		/>,
+		{ legacyRoot: true },
 	);
 
 	expect(screen.getByRole('list')).toBeInTheDocument();
@@ -157,6 +172,7 @@ it('renders a task list', () => {
 				},
 			]}
 		/>,
+		{ legacyRoot: true },
 	);
 
 	expect(screen.getByRole('list')).toBeInTheDocument();
@@ -199,6 +215,7 @@ it('renders a blockquote', () => {
 				},
 			]}
 		/>,
+		{ legacyRoot: true },
 	);
 
 	expect(screen.getByText('Cogito ergo sum.')).toBeInTheDocument();
@@ -219,6 +236,7 @@ it('renders a code block', async () => {
 				]}
 			/>
 		</Suspense>,
+		{ legacyRoot: true },
 	);
 
 	await waitFor(() => expect(screen.getByRole('region')).toBeInTheDocument());
@@ -239,6 +257,7 @@ it('renders a code block with language', async () => {
 				]}
 			/>
 		</Suspense>,
+		{ legacyRoot: true },
 	);
 
 	await waitFor(() => expect(screen.getByRole('region')).toBeInTheDocument());
@@ -259,6 +278,7 @@ it('renders a Katex block', async () => {
 				]}
 			/>
 		</Suspense>,
+		{ legacyRoot: true },
 	);
 
 	// workaround for jest-dom's inability to handle MathML
@@ -278,7 +298,64 @@ it('renders a line break', () => {
 				},
 			]}
 		/>,
+		{ legacyRoot: true },
 	);
 
 	expect(container).toContainHTML('<br>');
+});
+
+it('renders plain text instead of emojis based on preference', () => {
+	render(
+		<MarkupInteractionContext.Provider
+			value={{
+				convertAsciiToEmoji: false,
+				useEmoji: false,
+			}}
+		>
+			<Markup
+				tokens={[
+					{
+						type: 'PARAGRAPH',
+						value: [
+							{ type: 'PLAIN_TEXT', value: 'Hey! ' },
+							{ type: 'EMOJI', value: { type: 'PLAIN_TEXT', value: 'smile' }, shortCode: 'smile' },
+							{ type: 'PLAIN_TEXT', value: ' ' },
+							{ type: 'EMOJI', value: { type: 'PLAIN_TEXT', value: ':)' }, shortCode: 'slight_smile' },
+						],
+					},
+				]}
+			/>
+		</MarkupInteractionContext.Provider>,
+		{ legacyRoot: true },
+	);
+
+	expect(screen.getByText('Hey! :smile: :)')).toBeInTheDocument();
+});
+
+it('renders plain text instead of ASCII emojis based on useEmojis preference', () => {
+	render(
+		<MarkupInteractionContext.Provider
+			value={{
+				convertAsciiToEmoji: true,
+				useEmoji: false,
+			}}
+		>
+			<Markup
+				tokens={[
+					{
+						type: 'PARAGRAPH',
+						value: [
+							{ type: 'PLAIN_TEXT', value: 'Hey! ' },
+							{ type: 'EMOJI', value: { type: 'PLAIN_TEXT', value: 'smile' }, shortCode: 'smile' },
+							{ type: 'PLAIN_TEXT', value: ' ' },
+							{ type: 'EMOJI', value: { type: 'PLAIN_TEXT', value: ':)' }, shortCode: 'slight_smile' },
+						],
+					},
+				]}
+			/>
+		</MarkupInteractionContext.Provider>,
+		{ legacyRoot: true },
+	);
+
+	expect(screen.getByText('Hey! :smile: :)')).toBeInTheDocument();
 });

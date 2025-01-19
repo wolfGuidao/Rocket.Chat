@@ -1,7 +1,20 @@
-import { Messages, Rooms } from '@rocket.chat/models';
+import type { IRoom } from '@rocket.chat/core-typings';
+import { Messages, Rooms, VideoConference } from '@rocket.chat/models';
 
 import { callbacks } from '../../../../lib/callbacks';
-import { deleteRoom } from '../../../lib/server';
+import { deleteRoom } from '../../../lib/server/functions/deleteRoom';
+import { notifyOnMessageChange } from '../../../lib/server/lib/notifyListener';
+
+const updateAndNotifyParentRoomWithParentMessage = async (room: IRoom): Promise<void> => {
+	const parentMessage = await Messages.refreshDiscussionMetadata(room);
+	if (!parentMessage) {
+		return;
+	}
+	void notifyOnMessageChange({
+		id: parentMessage._id,
+		data: parentMessage,
+	});
+};
 
 /**
  * We need to propagate the writing of new message in a discussion to the linking
@@ -9,7 +22,7 @@ import { deleteRoom } from '../../../lib/server';
  */
 callbacks.add(
 	'afterSaveMessage',
-	async function (message, { _id, prid }) {
+	async (message, { room: { _id, prid } }) => {
 		if (!prid) {
 			return message;
 		}
@@ -25,7 +38,7 @@ callbacks.add(
 			return message;
 		}
 
-		await Messages.refreshDiscussionMetadata(room);
+		await updateAndNotifyParentRoomWithParentMessage(room);
 
 		return message;
 	},
@@ -35,7 +48,7 @@ callbacks.add(
 
 callbacks.add(
 	'afterDeleteMessage',
-	async function (message, { _id, prid }) {
+	async (message, { _id, prid }) => {
 		if (prid) {
 			const room = await Rooms.findOneById(_id, {
 				projection: {
@@ -45,7 +58,7 @@ callbacks.add(
 			});
 
 			if (room) {
-				await Messages.refreshDiscussionMetadata(room);
+				await updateAndNotifyParentRoomWithParentMessage(room);
 			}
 		}
 		if (message.drid) {
@@ -95,6 +108,8 @@ callbacks.add(
 				},
 			},
 		);
+
+		await VideoConference.unsetDiscussionRid(drid);
 		return drid;
 	},
 	callbacks.priority.LOW,

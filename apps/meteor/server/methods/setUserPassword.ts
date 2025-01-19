@@ -1,14 +1,14 @@
-import type { UpdateResult } from 'mongodb';
-import { Meteor } from 'meteor/meteor';
-import { check } from 'meteor/check';
-import { Accounts } from 'meteor/accounts-base';
-import type { ServerMethods } from '@rocket.chat/ui-contexts';
+import type { ServerMethods } from '@rocket.chat/ddp-client';
 import { Users } from '@rocket.chat/models';
+import { Accounts } from 'meteor/accounts-base';
+import { check } from 'meteor/check';
+import { Meteor } from 'meteor/meteor';
+import type { UpdateResult } from 'mongodb';
 
 import { passwordPolicy } from '../../app/lib/server';
 import { compareUserPassword } from '../lib/compareUserPassword';
 
-declare module '@rocket.chat/ui-contexts' {
+declare module '@rocket.chat/ddp-client' {
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	interface ServerMethods {
 		setUserPassword(password: string): UpdateResult;
@@ -40,7 +40,7 @@ Meteor.methods<ServerMethods>({
 				method: 'setUserPassword',
 			});
 		}
-		if (compareUserPassword(user, { plain: password })) {
+		if (await compareUserPassword(user, { plain: password })) {
 			throw new Meteor.Error('error-password-same-as-current', 'Entered password same as current password', {
 				method: 'setUserPassword',
 			});
